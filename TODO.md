@@ -8,9 +8,9 @@ section. **Policy:** prefer a macro; build an addon only when a macro can't do i
 - [ ] **Refine existing macros** (provided by Keaton) — review, clean up, and
       either tighten as macros or, if a macro is insufficient, scope an addon.
   - [x] Smart pet attack + engage (hunter) → `macros/hunter/smart-pet-attack.md`.
-        Primary = one-button Auto Shot + mouseover pet (target-splitting), tuned
-        for a leveling Auto-Shot hunter. **Left to do:** test in-game (`!Auto
-        Shot` toggle, mouseover split, optional `/startattack` melee fallback).
+        One-button engage + mouseover pet (target-splitting). Field-tested:
+        `!Auto Shot` clipped when spammed/out of range, so switched to
+        `/startattack` (spam-safe, fires Auto Shot in range, melees if closed on).
 - [ ] **Hunter: feed-pet macro** — feed the pet the *best available* food in bags
       for its diet/level. Determine whether a pure macro can pick "best available"
       food, or whether this needs a small addon (likely needs bag scanning + diet

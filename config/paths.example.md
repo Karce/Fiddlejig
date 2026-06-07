@@ -12,10 +12,10 @@ local WoW Classic install lives, so addons can be copied in for testing.
 
 ## Paths
 
-- **WoW Classic root** (folder containing the `.exe` / the `_classic_` dir):
-  `…/World of Warcraft/_classic_`
+- **WoW Classic root** (folder containing the `.exe` / the `_anniversary_` dir):
+  `…/World of Warcraft/_anniversary_`
 - **AddOns dir** (where addon folders get copied for testing):
-  `…/World of Warcraft/_classic_/Interface/AddOns`
+  `…/World of Warcraft/_anniversary_/Interface/AddOns`
 - **WTF dir** (account SavedVariables / macros, if needed):
-  `…/World of Warcraft/_classic_/WTF`
+  `…/World of Warcraft/_anniversary_/WTF`
 - **Account name** (under `WTF/Account/<NAME>`): `…`
