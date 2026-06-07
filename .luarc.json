@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "runtime.version": "Lua 5.1",
+  "runtime.builtin": {
+    "os": "disable",
+    "io": "disable",
+    "package": "disable"
+  },
+  "workspace.library": [
+    ".luals/wow-api/Annotations"
+  ],
+  "diagnostics.globals": [
+    "SLASH_FIDDLEJIG1"
+  ],
+  "diagnostics.disable": [
+    "duplicate-set-field"
+  ],
+  "format.enable": true,
+  "hint.enable": true
+}

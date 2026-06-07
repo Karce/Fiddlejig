@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "anthropic.claude-code",
+    "sumneko.lua",
+    "ketho.wow-api",
+    "JohnnyMorganz.stylua",
+    "EditorConfig.EditorConfig"
+  ]
+}

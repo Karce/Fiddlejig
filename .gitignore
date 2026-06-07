@@ -1,3 +1,23 @@
+# --- Fiddlejig: local / personal (PUBLIC repo — keep paths & secrets out) ---
+# Machine-specific game paths. Commit config/paths.example.md instead.
+config/paths.local.md
+*.local.md
+*.local
+.env
+
+# Vendored Lua Language Server / WoW API definitions (fetched by script)
+.luals/
+
+# Claude Code rules / overrides — kept local-only, never committed
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+
+# VS Code: ignore personal settings, but share the recommended extension list
+.vscode/*
+!.vscode/extensions.json
+
+# --- Lua build artifacts ---
 # Compiled Lua sources
 luac.out
 
