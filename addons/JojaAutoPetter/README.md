@@ -92,8 +92,9 @@ Planned provisioning features (tracked in the repo `TODO.md`):
 `Icon.tga` (64×64, true-color uncompressed) is referenced via `## IconTexture:` in
 the `.toc`. Heads-up: `IconTexture` is a Retail 10.1 TOC field and the stock Classic
 2.5.x AddOns list predates per-addon icons, so it may not render there — it's
-included in case the Anniversary client (modern engine) honors it. The source art is
-`Auto-Petter.png` at the repo root.
+included in case the Anniversary client (modern engine) honors it — and it does show
+in-game. Regenerate from any square-ish source with ImageMagick:
+`magick src.png -alpha on -background none -gravity center -extent 96x96 -resize 64x64 PNG32:- | magick - +map -compress none -type TrueColorAlpha TGA:Icon.tga`
 
 ## Install
 

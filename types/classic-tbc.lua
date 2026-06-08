@@ -19,3 +19,37 @@ function GetPetHappiness() end
 ---@param filter? string
 ---@return string name, integer icon, integer count, string debuffType, number duration, number expirationTime, string source, boolean isStealable, boolean nameplateShowPersonal, integer spellId
 function UnitBuff(unit, index, filter) end
+
+-- Bag/container API. Retail moved these under C_Container; on 2.5.x the globals are
+-- current. (Ketho's annotations only ship the C_Container.* forms, hence the gap.)
+---@param bag integer
+---@return integer numSlots
+function GetContainerNumSlots(bag) end
+
+---@param bag integer
+---@param slot integer
+---@return integer? icon, integer count, boolean locked, integer quality, boolean readable, boolean lootable, string? itemLink, boolean isFiltered, boolean noValue, integer? itemID, boolean isBound
+function GetContainerItemInfo(bag, slot) end
+
+---@param bag integer
+---@param slot integer
+---@return string? itemLink
+function GetContainerItemLink(bag, slot) end
+
+--- Spell info by name or id. Retail moved this to C_Spell.GetSpellInfo; the global
+--- is current on 2.5.x. First return (name) is what we use.
+---@param spell string|integer
+---@return string name, string rank, integer icon, number castTime, number minRange, number maxRange, integer spellID
+function GetSpellInfo(spell) end
+
+-- FrameXML globals: the WoW API extension only loads the API "Core", not FrameXML,
+-- so these come from here.
+
+---@type table<string, fun(msg: string, editBox?: table)>
+SlashCmdList = {}
+
+---@type any  # a ChatFrame (MessageFrame); typed loosely so :AddMessage is fine
+DEFAULT_CHAT_FRAME = {}
+
+---@type table<string, integer>  # sound kit ids (e.g. SOUNDKIT.TELL_MESSAGE)
+SOUNDKIT = {}

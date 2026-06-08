@@ -198,8 +198,7 @@ end
 -- Dump full state to chat so we can see exactly where feeding breaks down.
 local function Debug()
 	Print("--- debug ---")
-	Print("Feed Pet: name=" .. tostring(FeedPetSpellName()) ..
-		"  IsSpellKnown=" .. tostring(IsSpellKnown(FEED_PET_SPELL_ID)))
+	Print("Feed Pet spell: " .. tostring(FeedPetSpellName()))
 	Print("pet: exists=" .. tostring(UnitExists("pet")) ..
 		"  name=" .. tostring(UnitName("pet")) .. "  level=" .. tostring(UnitLevel("pet")))
 	Print("gates: happiness=" .. tostring(GetPetHappiness()) .. " (3=Happy → won't arm)" ..

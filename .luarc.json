@@ -10,9 +10,9 @@
     ".luals/wow-api/Annotations",
     "types"
   ],
-  "diagnostics.globals": [],
   "diagnostics.disable": [
-    "duplicate-set-field"
+    "duplicate-set-field",
+    "deprecated"
   ],
   "format.enable": true,
   "hint.enable": true
