@@ -1,0 +1,13 @@
+## Interface: 20505
+## Title: Joja Mart's Auto-Petter
+## Notes: Auto-picks the best food for your pet's diet and feeds it with one key — a Stardew Valley Auto-Petter homage.
+## Author: Keaton
+## Version: 0.1.0
+## SavedVariables: JojaAutoPetterDB
+## X-Category: Hunter
+## IconTexture: Interface\AddOns\JojaAutoPetter\Icon.tga
+
+Foods.lua
+Core.lua
+# Bindings.xml is auto-loaded by WoW from the addon folder — never list it here,
+# or it gets parsed a second time under the UI schema and throws "Unrecognized XML".

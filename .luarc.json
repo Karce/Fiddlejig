@@ -7,11 +7,10 @@
     "package": "disable"
   },
   "workspace.library": [
-    ".luals/wow-api/Annotations"
+    ".luals/wow-api/Annotations",
+    "types"
   ],
-  "diagnostics.globals": [
-    "SLASH_FIDDLEJIG1"
-  ],
+  "diagnostics.globals": [],
   "diagnostics.disable": [
     "duplicate-set-field"
   ],

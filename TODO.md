@@ -11,10 +11,22 @@ section. **Policy:** prefer a macro; build an addon only when a macro can't do i
         One-button engage + mouseover pet (target-splitting). Field-tested:
         `!Auto Shot` clipped when spammed/out of range, so switched to
         `/startattack` (spam-safe, fires Auto Shot in range, melees if closed on).
-- [ ] **Hunter: feed-pet macro** — feed the pet the *best available* food in bags
-      for its diet/level. Determine whether a pure macro can pick "best available"
-      food, or whether this needs a small addon (likely needs bag scanning + diet
-      logic → probably an addon fallback).
+- [x] **Hunter: feed-pet** — feed the pet the *best available* food in bags for its
+      diet/level → `addons/JojaAutoPetter/` (**Joja Mart's Auto-Petter**). **Needed an
+      addon** (a macro can't scan bags, run diet/level logic, or feed a dynamically
+      chosen bag slot through a secure button). Picks highest happiness tier →
+      lowest-level food in it → smallest stack (conserves good food); reminds when
+      happiness drops. Trigger by keybind or `/click JojaAutoPetterButton`.
+- [ ] **Auto-Petter: auto-buy food** — at a vendor, auto-purchase compatible food the
+      pet *loves* (best-fit, level-appropriate), with a toggle to turn it on/off. Scan
+      the merchant (`GetMerchantNumItems`/`GetMerchantItemLink`), match against the diet
+      + `Foods` table, buy via `BuyMerchantItem`. (Addon — needs merchant scan + state.)
+- [ ] **Auto-Petter: auto-cook** — one button to cook the raw food in your bags when
+      Cooking is known, in as few clicks as possible. Likely a secure cast + queue
+      across the cookable raw mats you hold. (Addon — trade-skill scan + secure cast.)
+- [ ] **Auto-Petter: low-food alert** — warn when you're running low on / out of
+      suitable food for the pet's diet (count remaining feeds), so you can restock
+      before it matters. Ties into auto-buy/auto-cook above.
 - [ ] **Rotation helper macros** — one-click / `castsequence` / `/cast` priority
       macros to smooth out rotations for specific specs (specs TBD).
 - [ ] **Run `scripts/setup-luals.sh`** once an editor is chosen, to pull the WoW

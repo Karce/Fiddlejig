@@ -11,8 +11,8 @@ wasn't enough.
 ## Installing
 
 Copy the addon folder into your WoW install's
-`_classic_/Interface/AddOns/` directory, then enable it on the character-select
-addons screen. (A sync script that reads `config/paths.lua` is on the TODO.)
+`_anniversary_/Interface/AddOns/` directory, then enable it on the character-select
+addons screen. (A sync script that reads `config/paths.local.md` is on the TODO.)
 
 ## .toc essentials (TBC Anniversary / 2.5.x)
 
