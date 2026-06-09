@@ -9,12 +9,15 @@
 --   * Private.data_stub / region defaults  -> Types.lua, RegionTypes/Icon.lua
 --   * aura2 trigger fields                  -> BuffTrigger2.lua
 --   * subtext sub-region (the %p countdown) -> SubRegionTypes/SubText.lua
+--   * subglow sub-region (Autocast Shine)   -> SubRegionTypes/Glow.lua (glowType "ACShine")
+--   * conditions (per-state glow)           -> Conditions.lua, WeakAuras.lua ("show" var)
 --   * transmit wrapper {m,d,v,s} + v=1421   -> Transmission.lua (DisplayToString)
 --
 -- Each aura shows its icon when the tracked aura is MISSING (a "cast this now"
 -- prompt) and, separately, while it's still up but within its final seconds — there
 -- the cooldown swipe and a centered %p number count down. The two states are two
--- triggers combined with "any" (OR) logic.
+-- triggers combined with "any" (OR) logic. An Autocast Shine glow (the gold sparkle
+-- WoW puts on autocast-enabled buttons) draws attention to "reapply me".
 --
 -- Usage (WA_LIBS points at your local WeakAuras/Libs — a personal path, never committed):
 --   WA_LIBS="/path/to/AddOns/WeakAuras/Libs" lua tools/weakauras/generate.lua
@@ -33,6 +36,7 @@ if not LIBS then
   io.stderr:write("Set WA_LIBS to your local WeakAuras/Libs directory.\n")
   os.exit(1)
 end
+
 -- LibSerialize captures `pairs` as an upvalue and uses it to walk a table's map
 -- keys; pairs() order is randomized per process in Lua 5.4+, so two runs would emit
 -- byte-different (though equivalent) strings. Install a deterministic, sorted pairs
@@ -94,8 +98,48 @@ local function auraTrigger(o, showOn, extra)
   return t
 end
 
--- Build an `icon` aura with the two-trigger missing/countdown behavior described above.
+-- The Autocast Shine glow sub-region. `downplayed` = the subtler look used while a
+-- timer is still counting down (dim gold, smaller); the full look is bright natural
+-- gold at full scale, applied either always (Battle Shout) or via a condition (Rend).
+local function glowSubRegion(downplayed)
+  return {
+    type = "subglow",
+    glow = true,
+    glowType = "ACShine", -- the gold autocast sparkle (LibCustomGlow AutoCastGlow)
+    useGlowColor = downplayed and true or false,
+    glowColor = downplayed and { 1, 0.85, 0.3, 0.45 } or { 1, 1, 1, 1 },
+    glowLines = 8,
+    glowFrequency = 0.25,
+    glowDuration = 1,
+    glowLength = 10,
+    glowThickness = 1,
+    glowScale = downplayed and 0.65 or 1,
+    glowBorder = false,
+    glowXOffset = 0,
+    glowYOffset = 0,
+  }
+end
+
+-- Condition: when trigger 1 (the "missing" trigger) is Active, promote the glow from
+-- its downplayed default to the full, attention-grabbing look. Used by Rend so the
+-- glow is subtle during the final-tick countdown and full once the debuff drops.
+-- (sub.3 = the glow sub-region: [1] subbackground, [2] subtext, [3] subglow.)
+local function fullWhenMissingConditions()
+  return {
+    {
+      check = { trigger = 1, variable = "show", value = 1 },
+      changes = {
+        { property = "sub.3.useGlowColor", value = false },
+        { property = "sub.3.glowColor", value = { 1, 1, 1, 1 } },
+        { property = "sub.3.glowScale", value = 1 },
+      },
+    },
+  }
+end
+
+-- Build an `icon` aura with the two-trigger missing/countdown behavior plus glow.
 local function iconAura(o)
+  local downplayed = (o.glow == "fullWhenOff")
   return {
     id = o.id,
     uid = o.uid,
@@ -137,7 +181,8 @@ local function iconAura(o)
       disjunctive = "any",     -- show if EITHER trigger is active (missing OR expiring)
     },
     -- A centered countdown number; %p renders the remaining time of the active
-    -- trigger, and is blank for the "missing" state (its duration is 0).
+    -- trigger, and is blank for the "missing" state (its duration is 0). Plus the
+    -- Autocast Shine glow.
     subRegions = {
       { type = "subbackground" },
       {
@@ -161,7 +206,11 @@ local function iconAura(o)
         text_fixedWidth = 64,
         text_wordWrap = "WordWrap",
       },
+      glowSubRegion(downplayed),
     },
+    -- Rend downplays the glow by default (the countdown look) and promotes it to full
+    -- when the debuff is off; Battle Shout glows full whenever shown, so no condition.
+    conditions = downplayed and fullWhenMissingConditions() or {},
     load = {
       class = { multi = { WARRIOR = true } },
       use_class = true,
@@ -176,7 +225,6 @@ local function iconAura(o)
       main   = { type = "none", duration_type = "seconds", easeType = "none", easeStrength = 3 },
       finish = { type = "none", duration_type = "seconds", easeType = "none", easeStrength = 3 },
     },
-    conditions = {},
     config = {},
     authorOptions = {},
     information = {},
@@ -207,6 +255,13 @@ local function verify(str, spec)
   assert(t1.unit == spec.unit and t1.debuffType == spec.debuffType, "unit/debuffType")
   assert(t1.auranames[1] == spec.auraname, "auraname")
   assert(d.subRegions[2].type == "subtext" and d.subRegions[2].text_text == "%p", "countdown subtext")
+  assert(d.subRegions[3].type == "subglow" and d.subRegions[3].glowType == "ACShine", "autocast glow")
+  if spec.glow == "fullWhenOff" then
+    assert(d.conditions[1].check.trigger == 1 and d.conditions[1].check.variable == "show",
+      "glow condition checks trigger 1 active")
+  else
+    assert(#d.conditions == 0, "no conditions expected")
+  end
 end
 
 local specs = {
@@ -218,6 +273,7 @@ local specs = {
     auraname = "Battle Shout",
     inCombat = nil,    -- always loaded, so you can re-buff before a pull
     remThreshold = 10, -- countdown shows in the last 10 seconds
+    glow = "full",     -- Autocast Shine glows full whenever the icon is shown
     x = 0, y = -120,
   },
   {
@@ -226,8 +282,9 @@ local specs = {
     unit = "target",
     debuffType = "HARMFUL",
     auraname = "Rend",
-    inCombat = true,  -- only nag mid-fight, not when chatting up friendly NPCs
-    remThreshold = 3, -- countdown shows in the last ~tick (3s)
+    inCombat = true,       -- only nag mid-fight, not when chatting up friendly NPCs
+    remThreshold = 3,      -- countdown shows in the last ~tick (3s)
+    glow = "fullWhenOff",  -- downplayed glow while counting down, full once it drops
     x = 0, y = -168,
   },
 }

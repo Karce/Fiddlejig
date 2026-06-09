@@ -19,6 +19,10 @@ See the top-level [WeakAuras README](../README.md) for how to import a string
   one shows the icon with a counting `%p` number in the buff/debuff's final seconds
   (refresh in time), the other shows it as a static prompt once it's actually gone.
   Between those, when everything's healthy, the icon is hidden.
+- **Autocast Shine glow.** Both wear the gold sparkle WoW puts on autocast-enabled
+  buttons (a `subglow` sub-region, `glowType = "ACShine"`). Battle Shout glows full
+  the whole time it's shown; Rend keeps it **downplayed** during the countdown and
+  promotes it to **full** (via a Condition) once the debuff is off the target.
 - **Own only + match by name.** They track *your* aura and match by spell **name**,
   so every rank counts automatically as you level and train new ranks — you never
   have to update a spell ID.
@@ -28,5 +32,5 @@ See the top-level [WeakAuras README](../README.md) for how to import a string
   Rend). While the `/wa` window is open you can drag them anywhere; the move
   handles only show while options are open.
 
-Want a glow/flash or a sound instead of a plain icon, or a warning *before* a buff
-falls off rather than after? Each file's **Tweaks** section covers it.
+Want to retune the glow, add a sound, or change the warning window? Each file's
+**Tweaks** section covers it.
