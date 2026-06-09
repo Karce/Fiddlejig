@@ -1,7 +1,7 @@
 # Fiddlejig
 
-A collection of player-aiding tools — **macros** and **addons** — for
-**World of Warcraft Classic: The Burning Crusade Anniversary** (WoW Classic 2.5.x).
+A collection of player-aiding tools — **macros**, **addons**, and **WeakAuras** —
+for **World of Warcraft Classic: The Burning Crusade Anniversary** (WoW Classic 2.5.x).
 
 Fiddlejig is a grab-bag of quality-of-life and automation helpers: one-click
 rotation aids, smart utility macros, and small addons for things a macro can't
@@ -19,6 +19,7 @@ handling, a UI, or logic past the 255-character macro limit.
 
 - **Hunter pet feeding** — feed your pet the best available food in your bags.
 - **Rotation helpers** — one-click / castsequence macros to smooth out rotations.
+- **Warrior WeakAuras** — reminders to keep Battle Shout up and Rend on your target.
 - ...more to come. See [`TODO.md`](TODO.md) for the working feature list.
 
 ## Repository layout
@@ -29,6 +30,9 @@ Fiddlejig/
 │   └── <category>/<name>.md   # description + macro text + usage notes
 ├── addons/        # Full addons (fallback when a macro won't do)
 │   └── <AddonName>/<AddonName>.toc + Lua sources
+├── weakauras/     # Importable WeakAuras (!WA:2! strings), grouped by class
+│   └── <category>/<name>.md   # description + import string + how it's wired
+├── tools/         # Dev tooling (e.g. the WeakAuras string generator)
 ├── docs/          # Reference & conventions
 │   ├── api/       # WoW Classic TBC Anniversary (2.5.x) Lua API reference
 │   └── conventions.md
@@ -65,8 +69,14 @@ body into the in-game macro editor.
 ## Using the addons
 
 Copy an addon folder from `addons/` into your WoW
-`_classic_/Interface/AddOns/` directory, then enable it on the character-select
+`_anniversary_/Interface/AddOns/` directory, then enable it on the character-select
 addons screen.
+
+## Using the WeakAuras
+
+Each file under [`weakauras/`](weakauras/) has a `!WA:2!` import string. In game,
+type `/wa` → **Import**, paste the string, and confirm. Requires the
+[WeakAuras](https://www.curseforge.com/wow/addons/weakauras-2) addon.
 
 ## Contributing / development
 
