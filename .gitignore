@@ -8,6 +8,9 @@ config/paths.local.md
 # Vendored Lua Language Server / WoW API definitions (fetched by script)
 .luals/
 
+# Local WeakAuras-install symlinks for tools/weakauras (machine-specific)
+tools/weakauras/.local/
+
 # Claude Code rules / overrides — kept local-only, never committed
 CLAUDE.md
 CLAUDE.local.md

@@ -74,8 +74,9 @@ addons screen.
 
 ## Using the WeakAuras
 
-Each file under [`weakauras/`](weakauras/) has a `!WA:2!` import string. In game,
-type `/wa` → **Import**, paste the string, and confirm. Requires the
+Each file under [`weakauras/`](weakauras/) has a `!WA:2!` import string per
+supported client (TBC Anniversary and Classic Era). In game, type `/wa` →
+**Import**, paste the string for your client, and confirm. Requires the
 [WeakAuras](https://www.curseforge.com/wow/addons/weakauras-2) addon.
 
 ## Contributing / development

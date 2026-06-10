@@ -3,6 +3,9 @@
 -- Builds "!WA:2!" import strings for the auras defined in `specs` below, using
 -- WeakAuras' own serialization pipeline (LibSerialize -> LibDeflate -> EncodeForPrint),
 -- exactly as the in-game Export does (see WeakAuras/Transmission.lua: TableToString).
+-- Each aura is built once per client FLAVOR (TBC Anniversary, Classic Era) — the
+-- flavors differ only in the `tocversion` tag, which is what keeps WeakAuras from
+-- warning "made for a different game version" on import.
 --
 -- The aura data tables here mirror WeakAuras' schema for an `icon` region with two
 -- `aura2` (Buff/Debuff) triggers, taken from the installed source:
@@ -13,14 +16,15 @@
 --   * conditions (per-state glow)           -> Conditions.lua, WeakAuras.lua ("show" var)
 --   * transmit wrapper {m,d,v,s} + v=1421   -> Transmission.lua (DisplayToString)
 --
--- Each aura shows its icon when the tracked aura is MISSING (a "cast this now"
--- prompt) and, separately, while it's still up but within its final seconds — there
--- the cooldown swipe and a centered %p number count down. The two states are two
--- triggers combined with "any" (OR) logic. An Autocast Shine glow (the gold sparkle
--- WoW puts on autocast-enabled buttons) draws attention to "reapply me".
+-- Usage (from anywhere; paths resolve relative to this script):
+--   lua tools/weakauras/generate.lua            # print all strings
+--   lua tools/weakauras/generate.lua --write    # also patch them into the docs
 --
--- Usage (WA_LIBS points at your local WeakAuras/Libs — a personal path, never committed):
---   WA_LIBS="/path/to/AddOns/WeakAuras/Libs" lua tools/weakauras/generate.lua
+-- The WeakAuras libraries are found via gitignored symlinks (personal install
+-- paths never reach the repo):
+--   tools/weakauras/.local/wa-anniversary -> <anniversary>/Interface/AddOns/WeakAuras
+--   tools/weakauras/.local/wa-era         -> <classic era>/Interface/AddOns/WeakAuras
+-- or set WA_LIBS to a WeakAuras/Libs directory to override.
 
 -- This is standalone Lua (run by the system `lua`), not addon code, so it uses the
 -- real os/io libraries that the project's .luarc.json disables for the WoW sandbox.
@@ -31,9 +35,33 @@
 -- LibSerialize's decode path needs it; shim so this runs on either.
 unpack = unpack or table.unpack -- luacheck: ignore
 
-local LIBS = os.getenv("WA_LIBS")
-if not LIBS then
-  io.stderr:write("Set WA_LIBS to your local WeakAuras/Libs directory.\n")
+local SCRIPT_DIR = (arg and arg[0] or ""):match("^(.*)[/\\]") or "."
+local ROOT = SCRIPT_DIR .. "/../.."
+
+-- Both client flavors ship the same WeakAuras (verified: 5.21.7, internalVersion 90
+-- on both installs), so one copy of the libs serializes for both. Re-check those two
+-- pins in Init.lua/WeakAuras.lua when WeakAuras updates.
+local FLAVORS = {
+  { key = "anniversary", heading = "TBC Anniversary (2.5.x)", tocversion = 20505 },
+  { key = "era", heading = "Classic Era (1.15)", tocversion = 11508 },
+}
+local WA_VERSION = "5.21.7"
+local INTERNAL_VERSION = 90
+local TRANSMIT_VERSION = 1421 -- single aura, no sub-groups (Transmission.lua)
+local DEFAULT_FONT = "Friz Quadrata TT" -- WeakAuras.defaultFont
+
+local function findLibs()
+  local candidates = {}
+  if os.getenv("WA_LIBS") then table.insert(candidates, os.getenv("WA_LIBS")) end
+  for _, f in ipairs(FLAVORS) do
+    table.insert(candidates, SCRIPT_DIR .. "/.local/wa-" .. f.key .. "/Libs")
+  end
+  for _, dir in ipairs(candidates) do
+    local probe = io.open(dir .. "/LibDeflate/LibDeflate.lua", "r")
+    if probe then probe:close(); return dir end
+  end
+  io.stderr:write("WeakAuras libs not found. Create the .local symlinks (see README)\n" ..
+    "or set WA_LIBS to a WeakAuras/Libs directory.\n")
   os.exit(1)
 end
 
@@ -59,18 +87,11 @@ local function sortedPairs(t)
     if k ~= nil then return k, t[k] end
   end
 end
+local LIBS = findLibs()
 pairs = sortedPairs
 local LibDeflate = assert(dofile(LIBS .. "/LibDeflate/LibDeflate.lua"), "LibDeflate failed to load")
 local LibSerialize = assert(dofile(LIBS .. "/LibSerialize/LibSerialize.lua"), "LibSerialize failed to load")
 pairs = realpairs
-
--- Pinned to the installed WeakAuras (5.21.7) on TBC Anniversary (Interface 20505).
--- `s`/`tocversion` are informational; `internalVersion` and `v` drive import handling.
-local WA_VERSION = "5.21.7"
-local INTERNAL_VERSION = 90
-local TOC_VERSION = 20505
-local TRANSMIT_VERSION = 1421 -- single aura, no sub-groups (Transmission.lua)
-local DEFAULT_FONT = "Friz Quadrata TT" -- WeakAuras.defaultFont
 
 -- One aura2 (Buff/Debuff) trigger. `showOn` is "showOnMissing" or "showOnActive";
 -- `extra` adds the remaining-time check for the countdown trigger.
@@ -138,7 +159,7 @@ local function fullWhenMissingConditions()
 end
 
 -- Build an `icon` aura with the two-trigger missing/countdown behavior plus glow.
-local function iconAura(o)
+local function iconAura(o, tocversion)
   local downplayed = (o.glow == "fullWhenOff")
   return {
     id = o.id,
@@ -228,7 +249,7 @@ local function iconAura(o)
     config = {},
     authorOptions = {},
     information = {},
-    tocversion = TOC_VERSION,
+    tocversion = tocversion,
   }
 end
 
@@ -240,13 +261,14 @@ local function encode(data)
 end
 
 -- Decode a string we just produced and assert the critical fields survived.
-local function verify(str, spec)
+local function verify(str, spec, tocversion)
   local compressed = LibDeflate:DecodeForPrint((str:gsub("^!WA:2!", "")))
   local serialized = LibDeflate:DecompressDeflate(compressed)
   local ok, t = LibSerialize:Deserialize(serialized)
   assert(ok and t and t.d, "round-trip decode failed for " .. spec.id)
   local d = t.d
   assert(d.regionType == "icon", "regionType")
+  assert(d.tocversion == tocversion, "tocversion")
   assert(d.triggers.disjunctive == "any", "disjunctive")
   local t1, t2 = d.triggers[1].trigger, d.triggers[2].trigger
   assert(t1.type == "aura2" and t1.matchesShowOn == "showOnMissing", "trigger 1 (missing)")
@@ -268,6 +290,7 @@ local specs = {
   {
     id = "Battle Shout (Fiddlejig)",
     uid = "FjWarBShout0001",
+    doc = "weakauras/warrior/battle-shout.md",
     unit = "player",
     debuffType = "HELPFUL",
     auraname = "Battle Shout",
@@ -279,6 +302,7 @@ local specs = {
   {
     id = "Rend (Fiddlejig)",
     uid = "FjWarRend000001",
+    doc = "weakauras/warrior/rend.md",
     unit = "target",
     debuffType = "HARMFUL",
     auraname = "Rend",
@@ -289,10 +313,34 @@ local specs = {
   },
 }
 
+-- Replace the !WA:2! line under the flavor's "### <heading>" section of a doc.
+local function writeDoc(spec, heading, str)
+  local path = ROOT .. "/" .. spec.doc
+  local f = assert(io.open(path, "r"), "doc not found: " .. path)
+  local content = f:read("*a"); f:close()
+  local hpos = content:find("### " .. heading:gsub("[%(%)%.%%%+%-%*%?%[%]%^%$]", "%%%0"), 1)
+  assert(hpos, spec.doc .. " is missing a '### " .. heading .. "' section")
+  local s, e = content:find("!WA:2![^\n]*", hpos)
+  assert(s, spec.doc .. ": no !WA:2! line after '### " .. heading .. "'")
+  local updated = content:sub(1, s - 1) .. str .. content:sub(e + 1)
+  if updated ~= content then
+    local w = assert(io.open(path, "w")); w:write(updated); w:close()
+    return "updated"
+  end
+  return "unchanged"
+end
+
+local write = (arg and arg[1] == "--write")
 for _, spec in ipairs(specs) do
-  local str = encode(iconAura(spec))
-  verify(str, spec)
-  print(spec.id)
-  print(str)
-  print()
+  for _, flavor in ipairs(FLAVORS) do
+    local str = encode(iconAura(spec, flavor.tocversion))
+    verify(str, spec, flavor.tocversion)
+    print(("%s — %s [toc %d]"):format(spec.id, flavor.heading, flavor.tocversion))
+    if write then
+      print("  doc: " .. writeDoc(spec, flavor.heading, str))
+    else
+      print(str)
+      print()
+    end
+  end
 end

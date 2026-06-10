@@ -1,8 +1,10 @@
 # WeakAuras
 
 Importable [WeakAuras](https://www.curseforge.com/wow/addons/weakauras-2) for WoW
-Classic TBC Anniversary (2.5.x), grouped by class or category in subfolders
-(`warrior/`, ...).
+Classic — **TBC Anniversary (2.5.x)** and **Classic Era (1.15)** — grouped by
+class or category in subfolders (`warrior/`, ...). Each aura ships one import
+string per client flavor; they differ only in the client-version tag, so pick the
+one matching your game (the other still imports, just with a version warning).
 
 ## How sharing a WeakAura works
 

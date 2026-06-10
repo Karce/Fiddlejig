@@ -31,11 +31,12 @@ When you build an addon, record *why* a macro wasn't sufficient in its README.
 
 ## WeakAuras
 
-- One aura per file under `weakauras/<category>/<name>.md`: a description, the
-  `!WA:2!` import string in a code fence, and how it's wired.
+- One aura per file under `weakauras/<category>/<name>.md`: a description, a
+  `### <client flavor>` section with the `!WA:2!` string per supported client
+  (TBC Anniversary, Classic Era), and how it's wired.
 - Don't hand-edit import strings. They're generated from data tables by
   `tools/weakauras/generate.lua` (which runs WeakAuras' own serialize/compress/encode
-  and self-verifies); edit the spec there and re-run, then paste the new string in.
+  and self-verifies); edit the spec there and run with `--write` to patch the docs.
 - Prefer **Show On: No Aura(s) Found** for "maintain/reapply" reminders — it's the
   clearest and the most reliable mode on Classic clients.
 

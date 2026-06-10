@@ -12,13 +12,22 @@ sparkle WoW puts on autocast-enabled buttons) to grade urgency:
 
 It hides when Rend is freshly applied, and whenever you have no target.
 
-## Import string
+## Import strings
+
+Pick the one matching your client (they differ only in the client-version tag, so
+the wrong one still works — it just warns on import). Paste into `/wa` → **Import**.
+
+### TBC Anniversary (2.5.x)
 
 ```
 !WA:2!DrvZUTTXt8OQa4g2pIIsRrAqoyKI4)TxeCCQDlc6frhPghiljtQuNE5V4sYLKRn1Um7UuF4EQ6uo0t6rqN7jb0xa9eSqOpb5qEa8tqNDPKtsfGwo)MzNVNzl1SA4B(wokqsyuXH(rekrKyzdFKwocjIdFqPzjOYxHObjmEtoAaU3KmSV7ronA0Erb7Umcv6FuJ29A4mdrjdqAlEO6tAUkmNBa9LGwCboGrdflXib2vYX0yzYwt1iTrTPmk2wFr1TThGi0MQpt95QVyl1xQUTQc8)M)xoRq5sia6KzsblNawkJ)IYWV5AprmSV)U8GeenglE6UtZ4miqaNuvK7x7j1Yf4FjLn6iTIodrP54KDvBFvHW4nsu3Zy0pwIBakfRUxzNGeCWfhYLCsCmMxgynDiItq(PyBrcBKpelrKyRPbmwAiBe1B5gQgHX4KvBqUJizyVSVAdUhES8zeH2qHEZdXcKuxpXjlI0DcOeIKOY(jysCI8uBc4hV56txwopa)GB8qsywfhmnCNVRjjmmfFoj(7xqOrmErtY6kO1H5uu6VcThGXFZj0H6ovYvxGXz1fz4aPJ(Uj2PmuyKtqksi22zqEQKSn)S6ooh3XXZwqUeVTAplBTgAcFjuEOsn5mOk33ON3CdjBGps6nNJJbxQ79Q)3mbonYmjPU1COi7yKjE62QkRaOpk4IyolNg(M7UQyS7vDIIeyzP1WFBnCzbSF2ABXzsOKPlL2T70Ur2DLazFyWHPlbbNrcLj21b4CJG3pcDLbhrgJdnx6pMvWGrLzvAYjxUZP5OqDlyNE9wDTmxOq8O3d1zhVZl71642nwA4EEUqsIMOU1BnWRZB76VSxNSkfmtqHRN9ErPsLkNv9dyVjX)iMBs)IGuF8WhLv4WHebbgH8kcQrmE4zCu20ZwtOQWHcSw27S1Z1EZ1N2Gumpz217aVOC3BUxTF6GUL3R2t0K)Wbl1cF26v8YR0OMC8RZX0Gj6BS)bgt1YSO)1gt1IqXI7m769h91o8aJQ9sibxasfLNAG6cx9JCtanwOzSjTnGnPBrWR5S8dxL9MlzbdlgP)0UFZ017MI))UQh8UziiKPWcK4(26LJf65rWlNWGmwVW2HIHTn)8Oitq886oN08LTCWdH5z)NJrPYKvWWdS3lCnxFvHwNqeccn2XyBloSb3HMoXBkSsKMECOW6TqSASsxoggSCC72OvRRz6coKmEr)JQ72RVBV6o9uvC0X6(25WBYWcfpglNRPBmMiKIeoKZTbN5nlNUofTGm8n3rHVVksfRsue15QluPQbllIX6WZ9dXkMLkZBFoEWwlGJoqwIKmE1Fw9Alfxjusvo8a7q1i1y1Ke1LE(GRCWd8u)Uv2DqgJ0RWJ6Y2FDJfHeX55uJG9r0j7NtcVQ55NH46s8E6FpoRkyKJw)4gOg8Uc2ZzKE56u(41Du(KcI)0Y(sgBqPQdQgwv4FqT9FCTFS6W)5v)7d
 ```
 
-Paste into `/wa` → **Import**.
+### Classic Era (1.15)
+
+```
+!WA:2!DrvZUTTrq44Qa4g2FISsRrGroyKI42cuy44u7we0lIksnjq2YMKUo9snxsUKCTP2Lz3LswUNQo5d9KEe05Esa9fqpble6tqoKhaH(a0zxk5KubOLZ3m78)m7kTQfD9xXrHscJk2piMqjIulB4J0YrirC4dklpfvzoIgMY4T4OUyVb54a3gonBE4Ks2hXiuzqJMh610zeIs6I0wCF1h1Awub3aotcAXf4qgnsmfJeyxjhttKPRouJ0g1MYOyB9fv31UlIqBP(e1NQ(SvvFU6UQQW)B))5mdviHaOtUjfSCczzm(lRa)gR9eXWEJT4HPiAcw80TgMZzqGaoPMOiy7NSDHa)ZzS(n0k60dLvGt3sT(8sHjlLOUVXOFOe3qugwD)koHP4Wl2Nl5KKemVcWAypeNGcYW2Iuw)aiwIjjwddzSSiwFQ)0LunJsWPZwIC7tYX(5FXsSh(s5ZicTHI8hhHfiPUEItNeR7eqjejrvcsXKKu5X2eWp(J1NUScEi(b36HKO8QoyA0MFtlsuug(CsY3oHqJz8YMK1CO1H5uu2VaThGXFZj0E6ov68lW486ICCO0rF3u7mgkk2jmdjeR70TitswNFADhNx0XX3wqUcVUAhlBTgAIajuEOsn5iOkFMrp)Xgsw3aK0FmhNaUu37vF9ibol2mjPUZyOi7yKjE66QQZayak8IeoRGgD99Mvo29QoXXcSCLfWFDbCAj8S8f2IZKqjtxkTpSZHnZVNeipdgCy6sq4PKizQDDao2i4DJqZn4yYL4iZL(JrLmyuzE1wCYvBECbks3c20ZB2nYCHcXJEhuND8oN41(fh2CQH75fcjjEG6oVXaVjVTRFIxN8QLmtrrlM9E5kRSsL8AVh7Lj(hWCz6xgK6Jh(O8sh2JiiWiKFzq1NXJoLJYhE6ccvvouG1YERTEU2FS(0gKI5PJUzh4Lvo627S9pU3rv2z7NOj)(9MQf(SfR4vMPrT44xxGPHd03y39mMQTzr)lnMQnHIfRn6M9h912FpJQEPKWlaPIkdnqDHREd3uqJjAgltBdyz6wg8AotF)vz)XswyVYr6p(7(3Hl2nf)2wQh82riiKPWcKydB9YXe98i4LdyqgRxy7qXW2wqrCSjiEEDNdADsBhCpyEo45yuMmDgm8a79cxZ1NvQ1beHGqtCm22IdBWDOzd8hcRezzVisy9giwnw5ioggSCCpQz723W0fCi5YjN1OUR3zUE1D8uvD0X6U2fWBYWcfpblhRPBEjrifPCiNpeCM)Oc6Iu0cYWRxtH3qfRsuPkI6C1fQmv3PLXyD45(EyfZsL7Vlh3D1jWrhilrsgV2pPETLIRekPQaEGTNQV6s1Gu1v(bGRCWD9v)Uv(AiJr8k9OUS9x3AserCEb1iyxeDWUfKO5To)uexxI3r)7X51aJ0yXJBGAW7kyFN(6LRJ5xUOJYhus8Nw2xXyDxPw3Ar1eb7T9UpE7FOwV)5v)3p
+```
 
 ## How it's wired
 
@@ -58,6 +67,7 @@ Two **Aura** (Buff/Debuff) triggers on your Rend, combined with **Any** (OR):
 
 - Rend needs a melee weapon equipped to land; the aura only reports the debuff, it
   can't tell you why an application failed.
-- Built for TBC Anniversary (2.5.x). Name match assumes an English client.
+- Built for TBC Anniversary (2.5.x) and Classic Era (1.15) — same aura, per-client
+  version tag. Name match assumes an English client.
 - Generated and verified by
   [`tools/weakauras/generate.lua`](../../tools/weakauras/generate.lua).
