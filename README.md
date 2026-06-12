@@ -68,9 +68,10 @@ body into the in-game macro editor.
 
 ## Using the addons
 
-Copy an addon folder from `addons/` into your WoW
-`_anniversary_/Interface/AddOns/` directory, then enable it on the character-select
-addons screen.
+Copy an addon folder from `addons/` into your WoW install's `Interface/AddOns/`
+directory (`_anniversary_` or `_classic_era_`), then enable it on the
+character-select addons screen. Addons that support both clients ship a
+`<AddonName>_Vanilla.toc` alongside the plain `.toc`.
 
 ## Using the WeakAuras
 

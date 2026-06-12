@@ -11,7 +11,8 @@
 -- case is "that food isn't auto-selected." Add IDs below as needed.
 --
 -- Data compiled from community pet-food references for TBC (2.5.x); IDs above the
--- TBC item range are intentionally omitted.
+-- TBC item range are intentionally omitted. The same table serves Classic Era —
+-- TBC-only IDs simply never show up in Era bags.
 
 local _, ns = ...
 
