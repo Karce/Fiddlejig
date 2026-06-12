@@ -11,6 +11,10 @@ config/paths.local.md
 # Local WeakAuras-install symlinks for tools/weakauras (machine-specific)
 tools/weakauras/.local/
 
+# Upstream reference clone for the ShotClock fork (nested .git, no upstream
+# LICENSE file) — kept local-only for diffing, never committed
+addons/WeaponSwingTimer-SixxFix/
+
 # Claude Code rules / overrides — kept local-only, never committed
 CLAUDE.md
 CLAUDE.local.md

@@ -18,6 +18,7 @@ handling, a UI, or logic past the 255-character macro limit.
 ## What's here (planned & in progress)
 
 - **Hunter pet feeding** — feed your pet the best available food in your bags.
+- **ShotClock** — a minimal hunter Auto Shot timer (reload bar + aim window).
 - **Rotation helpers** — one-click / castsequence macros to smooth out rotations.
 - **Warrior WeakAuras** — reminders to keep Battle Shout up and Rend on your target.
 - ...more to come. See [`TODO.md`](TODO.md) for the working feature list.

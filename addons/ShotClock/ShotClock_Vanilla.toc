@@ -1,0 +1,12 @@
+# Classic Era flavor — the 1.15 client prefers <Addon>_Vanilla.toc; the plain
+# .toc remains the TBC Anniversary (2.5.x) load. Same sources on both clients.
+## Interface: 11508
+## Title: ShotClock
+## Notes: Hunter Auto Shot timer — reload bar + aim window. Engine based on WeaponSwingTimer by LeftHandedGlove & WatchYourSixx.
+## Author: Keaton, LeftHandedGlove, WatchYourSixx
+## Version: 0.1.0
+## SavedVariablesPerCharacter: ShotClockDB
+## X-Category: Hunter
+
+Bar.lua
+Core.lua
