@@ -121,7 +121,10 @@ end
 
 -- The Autocast Shine glow sub-region. `downplayed` = the subtler look used while a
 -- timer is still counting down (dim gold, smaller); the full look is bright natural
--- gold at full scale, applied either always (Battle Shout) or via a condition (Rend).
+-- gold, applied either always (Battle Shout) or via a condition (Rend).
+-- Negative X/Y offsets SHRINK the orbit box (LibCustomGlow grows the glow frame by
+-- +offset per side), so -7 on a 40px icon makes the sparkles orbit inside the face
+-- instead of tracing the border.
 local function glowSubRegion(downplayed)
   return {
     type = "subglow",
@@ -134,10 +137,10 @@ local function glowSubRegion(downplayed)
     glowDuration = 1,
     glowLength = 10,
     glowThickness = 1,
-    glowScale = downplayed and 0.65 or 1,
+    glowScale = downplayed and 0.85 or 1.3,
     glowBorder = false,
-    glowXOffset = 0,
-    glowYOffset = 0,
+    glowXOffset = -7,
+    glowYOffset = -7,
   }
 end
 
@@ -152,7 +155,7 @@ local function fullWhenMissingConditions()
       changes = {
         { property = "sub.3.useGlowColor", value = false },
         { property = "sub.3.glowColor", value = { 1, 1, 1, 1 } },
-        { property = "sub.3.glowScale", value = 1 },
+        { property = "sub.3.glowScale", value = 1.3 },
       },
     },
   }
