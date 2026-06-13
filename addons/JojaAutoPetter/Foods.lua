@@ -67,6 +67,110 @@ ns.Foods = {
 	[24539]='Fungus', [27676]='Fungus', [27859]='Fungus', [29453]='Fungus', [30355]='Fungus', [33452]='Fungus',
 }
 
--- Foods you never want auto-fed (e.g. raw meat/fish you'd rather save for Cooking).
--- Add itemIDs here, e.g. [769] = true for Chunk of Boar Meat.
+-- Raw foods (cooking reagents) to feed only as a last resort, so they're saved for
+-- leveling Cooking. They stay eligible — cooked food of the same happiness tier is
+-- simply preferred (see Better() in Core.lua). This is the soft version of ns.Exclude
+-- below, which blocks a food outright.
+--
+-- Audited against Classic + TBC cooking recipes: every entry is a reagent that a
+-- recipe turns into a different cooked food (shown after the arrow). `/joja debug`
+-- tags each match "raw", so you can spot anything this table is missing.
+ns.Raw = {
+	-- Meats
+	[723] = true,   -- Goretusk Liver       -> Goretusk Liver Pie
+	[729] = true,   -- Stringy Vulture Meat  -> Westfall Stew
+	[769] = true,   -- Chunk of Boar Meat    -> Roasted Boar Meat
+	[1015] = true,  -- Lean Wolf Flank       -> Seasoned Wolf Kabob
+	[1080] = true,  -- Tough Condor Meat     -> Redridge Goulash
+	[1081] = true,  -- Crisp Spider Meat     -> Redridge Goulash
+	[2672] = true,  -- Stringy Wolf Meat     -> Charred Wolf Meat
+	[2673] = true,  -- Coyote Meat           -> Coyote Steak
+	[2677] = true,  -- Boar Ribs             -> Succulent Pork Ribs
+	[2886] = true,  -- Crag Boar Rib         -> Beer Basted Boar Ribs
+	[2924] = true,  -- Crocolisk Meat        -> Crocolisk Steak
+	[3173] = true,  -- Bear Meat             -> Smoked Bear Meat
+	[3404] = true,  -- Buzzard Wing          -> Barbecued Buzzard Wing
+	[3667] = true,  -- Tender Crocolisk Meat -> Crocolisk Gumbo
+	[3712] = true,  -- Turtle Meat           -> Soothing Turtle Bisque
+	[3730] = true,  -- Big Bear Meat         -> Big Bear Steak
+	[3731] = true,  -- Lion Meat             -> Hot Lion Chops
+	[5051] = true,  -- Dig Rat               -> Dig Rat Stew
+	[5465] = true,  -- Small Spider Leg      -> Kaldorei Spider Kabob
+	[5467] = true,  -- Kodo Meat             -> Roasted Kodo Meat
+	[5469] = true,  -- Strider Meat          -> Strider Stew
+	[5470] = true,  -- Thunder Lizard Tail   -> Crispy Lizard Tail
+	[5471] = true,  -- Stag Meat             -> Lean Venison
+	[12037] = true, -- Mystery Meat          -> Mystery Stew
+	[12184] = true, -- Raptor Flesh          -> Roast Raptor
+	[12202] = true, -- Tiger Meat            -> Jungle Stew
+	[12203] = true, -- Red Wolf Meat         -> Hot Wolf Ribs
+	[12204] = true, -- Heavy Kodo Meat       -> Heavy Kodo Stew
+	[12205] = true, -- White Spider Meat     -> Spider Sausage
+	[12208] = true, -- Tender Wolf Meat      -> Tender Wolf Steak
+	[12223] = true, -- Meaty Bat Wing        -> Crispy Bat Wing
+	[20424] = true, -- Sandworm Meat         -> Smoked Desert Dumplings
+	[21024] = true, -- Chimaerok Tenderloin  -> Dirge's Kickin' Chimaerok Chops
+	[22644] = true, -- Crunchy Spider Leg    -> Crunchy Spider Surprise
+	[23676] = true, -- Moongraze Stag Tenderloin -> Roasted Moongraze Tenderloin
+	[27668] = true, -- Lynx Meat             -> Lynx Steak
+	[27669] = true, -- Bat Flesh             -> Bat Bites
+	[27671] = true, -- Buzzard Meat          -> Buzzard Bites
+	[27674] = true, -- Ravager Flesh         -> Ravager Dog
+	[27677] = true, -- Chunk o' Basilisk     -> Blackened Basilisk
+	[27678] = true, -- Clefthoof Meat        -> Roasted Clefthoof
+	[27681] = true, -- Warped Flesh          -> Warp Burger
+	[27682] = true, -- Talbuk Venison        -> Talbuk Steak
+	[31670] = true, -- Raptor Ribs           -> Mok'Nathal Shortribs
+	[31671] = true, -- Serpent Flesh         -> Crunchy Serpent
+
+	-- Fish & shellfish
+	[2674] = true,  -- Crawler Meat          -> Crab Cake
+	[2675] = true,  -- Crawler Claw          -> Cooked Crab Claw
+	[4603] = true,  -- Raw Spotted Yellowtail -> Spotted Yellowtail
+	[4655] = true,  -- Giant Clam Meat       -> Giant Clam Scorcho
+	[5468] = true,  -- Soft Frenzy Flesh     -> Fillet of Frenzy
+	[5503] = true,  -- Clam Meat             -> Boiled Clams
+	[5504] = true,  -- Tangy Clam Meat       -> Goblin Deviled Clams
+	[6289] = true,  -- Raw Longjaw Mud Snapper -> Longjaw Mud Snapper
+	[6291] = true,  -- Raw Brilliant Smallfish -> Brilliant Smallfish
+	[6303] = true,  -- Raw Slitherskin Mackerel -> Slitherskin Mackerel
+	[6308] = true,  -- Raw Bristle Whisker Catfish -> Bristle Whisker Catfish
+	[6317] = true,  -- Raw Loch Frenzy       -> Loch Frenzy Delight
+	[6361] = true,  -- Raw Rainbow Fin Albacore -> Rainbow Fin Albacore
+	[6362] = true,  -- Raw Rockscale Cod     -> Rockscale Cod
+	[7974] = true,  -- Zesty Clam Meat       -> Clamlette Magnifique
+	[8365] = true,  -- Raw Mithril Head Trout -> Mithril Head Trout
+	[8959] = true,  -- Raw Spinefin Halibut  -> Spinefin Halibut
+	[12206] = true, -- Tender Crab Meat      -> Spiced Chili Crab
+	[13754] = true, -- Raw Glossy Mightfish  -> Cooked Glossy Mightfish
+	[13755] = true, -- Winter Squid          -> Grilled Squid
+	[13756] = true, -- Raw Summer Bass       -> Hot Smoked Bass
+	[13758] = true, -- Raw Redgill           -> Filet of Redgill
+	[13759] = true, -- Raw Nightfin Snapper  -> Nightfin Soup
+	[13760] = true, -- Raw Sunscale Salmon   -> Poached Sunscale Salmon
+	[13888] = true, -- Darkclaw Lobster      -> Lobster Stew
+	[13889] = true, -- Raw Whitescale Salmon -> Baked Salmon
+	[13893] = true, -- Large Raw Mightfish   -> Mightfish Steak
+	[21071] = true, -- Raw Sagefish          -> Smoked Sagefish
+	[21153] = true, -- Raw Greater Sagefish  -> Sagefish Delight
+	[24477] = true, -- Jaggal Clam Meat      -> Clam Bar
+	[27422] = true, -- Barbed Gill Trout     -> Blackened Trout
+	[27425] = true, -- Spotted Feltail       -> Feltail Delight
+	[27429] = true, -- Zangarian Sporefish   -> Blackened Sporefish
+	[27435] = true, -- Figluster's Mudfish   -> Grilled Mudfish
+	[27437] = true, -- Icefin Bluefish       -> Poached Bluefish
+	[27438] = true, -- Golden Darter         -> Golden Fish Sticks
+	[27439] = true, -- Furious Crawdad       -> Spicy Crawdad
+	[27515] = true, -- Huge Spotted Feltail  -> Fisherman's Feast
+	[27516] = true, -- Enormous Barbed Gill Trout -> Hot Buttered Trout
+	[33823] = true, -- Bloodfin Catfish      -> Broiled Bloodfin
+	[33824] = true, -- Crescent-Tail Skullfish -> Skullfish Soup
+
+	-- Eggs (mis-tagged as Fish in ns.Foods above, but genuine cooking reagents)
+	[6889] = true,  -- Small Egg             -> Herb Baked Egg
+	[12207] = true, -- Giant Egg             -> Monster Omelet
+}
+
+-- Foods you never want auto-fed at all. Stronger than ns.Raw — these are skipped
+-- even when nothing else is available. Add itemIDs here, e.g. [769] = true.
 ns.Exclude = {}

@@ -38,9 +38,10 @@ Happiness per feeding pulse depends on the level gap (`petLevel − foodLevel`):
 | 21–29 | Eats | 8 |
 | ≥ 30 | **Refuses** | 0 |
 
-It selects: **highest reachable tier → lowest-level food in that tier → smallest
-stack.** That keeps the pet fully happy while *conserving* your better/pricier food
-and using up partial stacks first.
+It selects: **highest reachable tier → cooked over raw → lowest-level food →
+smallest stack.** That keeps the pet fully happy, prefers cooked food so your raw
+cooking mats stay in your bags for leveling Cooking, conserves your better/pricier
+food, and uses up partial stacks first.
 
 ## Feeding
 
@@ -75,9 +76,14 @@ Fungus). Only the diet is stored — a food's level is read live, so the table n
 drifts on levels, and a missing/wrong entry is harmless (the game refuses food the
 pet can't eat). Add IDs as needed.
 
-**Cooks:** raw meat/fish (cooking mats) count as food and may get auto-fed. To save
-some for Cooking, add their itemIDs to `ns.Exclude` at the bottom of `Foods.lua`,
-e.g. `[769] = true` for Chunk of Boar Meat.
+**Cooks:** raw meat/fish double as pet food, so the addon could feed your cooking
+reagents. Two controls at the bottom of `Foods.lua`: `ns.Raw` **deprioritizes** the
+listed foods — they're fed only when no cooked food of the same happiness tier is
+available, so you keep them for Cooking but the pet never goes hungry. It ships with
+the full set of Classic + TBC raw cooking reagents (~90 items), each audited against
+the cooking recipe lists and annotated with the cooked food it makes. `ns.Exclude`
+is the hard version — listed IDs are **never** auto-fed. `/joja debug` prints each
+match with its id and a `raw` tag so you can spot anything the table is missing.
 
 ## Roadmap
 

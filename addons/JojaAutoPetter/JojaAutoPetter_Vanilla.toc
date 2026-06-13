@@ -4,7 +4,7 @@
 ## Title: Joja Mart's Auto-Petter
 ## Notes: Auto-picks the best food for your pet's diet and feeds it with one key — a Stardew Valley Auto-Petter homage.
 ## Author: Keaton
-## Version: 0.2.0
+## Version: 0.3.0
 ## SavedVariables: JojaAutoPetterDB
 ## X-Category: Hunter
 ## IconTexture: Interface\AddOns\JojaAutoPetter\Icon.tga

@@ -69,8 +69,18 @@ local function TierForDelta(delta)
 	return 0
 end
 
--- Best = highest happiness tier, then lowest food level (conserve better food),
--- then smallest stack (use up partial stacks first).
+-- Ranking, best first: highest happiness tier, then cooked food over raw (so raw
+-- cooking mats are saved for leveling Cooking), then lowest food level (conserve
+-- better food), then smallest stack (use up partial stacks first). Raw food is still
+-- fed when it's the only option in the tier — this only breaks ties, never blocks.
+local function Better(cand, best)
+	if not best then return true end
+	if cand.tier ~= best.tier then return cand.tier > best.tier end
+	if cand.raw ~= best.raw then return not cand.raw end
+	if cand.level ~= best.level then return cand.level < best.level end
+	return cand.count < best.count
+end
+
 local function FindBestFood()
 	if not UnitExists("pet") then return nil end
 	local diets = PetDiets()
@@ -86,13 +96,9 @@ local function FindBestFood()
 				if itemLevel then
 					local tier = TierForDelta(petLevel - itemLevel)
 					if tier > 0 then
-						local cand = { bag = bag, slot = slot, level = itemLevel, count = count or 1, tier = tier }
-						if not best
-							or cand.tier > best.tier
-							or (cand.tier == best.tier and cand.level < best.level)
-							or (cand.tier == best.tier and cand.level == best.level and cand.count < best.count) then
-							best = cand
-						end
+						local cand = { bag = bag, slot = slot, level = itemLevel,
+							count = count or 1, tier = tier, raw = ns.Raw[itemID] or false }
+						if Better(cand, best) then best = cand end
 					end
 				end
 			end
@@ -221,7 +227,7 @@ local function Debug()
 					if shown < 6 then
 						shown = shown + 1
 						local name, _, _, ilvl = GetItemInfo(itemID)
-						Print(string.format("  match: %s (id %d, ilvl %s, %s)", tostring(name), itemID, tostring(ilvl), diet))
+						Print(string.format("  match: %s (id %d, ilvl %s, %s%s)", tostring(name), itemID, tostring(ilvl), diet, ns.Raw[itemID] and ", raw" or ""))
 					end
 				end
 			end
@@ -231,8 +237,9 @@ local function Debug()
 	local best = FindBestFood()
 	if best then
 		local getLink = (C and C.GetContainerItemLink) or GetContainerItemLink
-		Print(string.format("best: %s (bag %d slot %d, level %d, tier %d)",
-			tostring(getLink(best.bag, best.slot)), best.bag, best.slot, best.level, best.tier))
+		Print(string.format("best: %s (bag %d slot %d, level %d, tier %d, %s)",
+			tostring(getLink(best.bag, best.slot)), best.bag, best.slot, best.level, best.tier,
+			best.raw and "raw" or "cooked"))
 	else
 		Print("best: NONE selected")
 	end
