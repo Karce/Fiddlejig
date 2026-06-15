@@ -187,6 +187,21 @@ run them on a blank frame. The ignored tests run each backend over the local
 
 ## Roadmap
 
+- **Auto-stop + log out when bags are full.** Right now the bot keeps fishing (and the
+  character stays logged in) long after the bags fill — burning an online session for
+  nothing. Goal: detect a full inventory, then **log the character out** (or quit the
+  game), and stop the bot. A WoW *macro* can't do this (it needs `BAG_UPDATE` event
+  handling, bag-slot queries, and a conditional logout), so it warrants a small
+  **addon**: on `BAG_UPDATE`, sum free slots across bags 0–4 and, when zero, call
+  `Logout()` (to char-select) or `Quit()` (exit the client). The bot then stops on its
+  own when the capture stream ends — make that path exit *cleanly* (treat stream-end as
+  a normal stop, not the current "capture pipeline did not open" error). Open questions:
+  the exact TBC 2.5.x bag API (likely `C_Container.GetContainerNumFreeSlots`, possibly
+  the legacy global `GetContainerNumFreeSlots`) and whether `Quit()`/`Logout()` are
+  callable un-prompted out of combat. Alternative (no addon): OCR/template-match the red
+  *"Inventory is full"* loot error and have the bot press a `/logout` keybind — less
+  reliable than the game's own bag count. Consider a configurable safety cap (e.g. also
+  stop after N hours) for unattended runs.
 - **Learned detection backend — done.** A YOLO11-n ONNX (`NnDetector`, ONNX Runtime via
   `ort`) is the default: it beats the cascade on recall (98.5% vs 79.4%) **and** speed
   (~25 ms vs ~42 ms; see **Detector backends**). Optional follow-up: an ROI-crop model at
