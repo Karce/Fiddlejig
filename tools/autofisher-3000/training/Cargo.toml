@@ -1,0 +1,12 @@
+[package]
+name = "fishing-training"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dbus = "0.9"
+portal-screencast = "0.1.0"
+opencv = "0.86"
+simple_moving_average = "0.1.2"

@@ -1,0 +1,8 @@
+# Autofisher-3000 workspace. `training/` (the original portal/PipeWire capture-and-
+# train tool) is excluded: it pins opencv `0.86`, which predates the system's OpenCV
+# 4.13 and won't build against it. Migrating it to opencv `0.98` + ashpd and folding
+# it in is a roadmap item (see the README); for now it's a standalone crate.
+[workspace]
+resolver = "2"
+members = ["bot"]
+exclude = ["training"]

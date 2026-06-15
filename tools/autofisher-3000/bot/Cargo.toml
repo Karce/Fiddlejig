@@ -1,0 +1,25 @@
+[package]
+name = "autofisher-3000"
+version = "0.1.0"
+edition = "2021"
+description = "World of Warcraft fishing bot — Wayland-native (XDG portals), OpenCV bobber detection"
+license = "MIT"
+
+# Library holds the testable logic; the binary is the thin imperative shell.
+[lib]
+name = "autofisher"
+path = "src/lib.rs"
+
+[[bin]]
+name = "autofisher-3000"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+anyhow = "1"
+opencv = { version = "0.98", default-features = false, features = ["imgproc", "objdetect", "imgcodecs", "videoio", "highgui"] }
+ashpd = { version = "0.13", default-features = false, features = ["tokio", "remote_desktop", "screencast"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "signal"] }
+clap = { version = "4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
