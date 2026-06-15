@@ -10,11 +10,12 @@ use crate::detect::{Detector, LureMatcher};
 use crate::frame::Frame;
 use crate::state::Point;
 use anyhow::{Context, Result};
-use opencv::core::Scalar;
+use opencv::core::{Rect, Scalar};
 use opencv::prelude::*;
 use opencv::{highgui, imgproc, videoio};
 use std::os::fd::RawFd;
-use std::time::{Duration, Instant};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use tokio::sync::watch;
 
 /// Latest detection snapshot handed to the controller.
@@ -59,6 +60,7 @@ pub fn run(
     pipeline: String,
     mut detector: Box<dyn Detector + Send>,
     lure: Option<LureMatcher>,
+    check_lure: Arc<AtomicBool>,
     tx: watch::Sender<CaptureState>,
     debug: bool,
 ) -> Result<()> {
@@ -76,7 +78,6 @@ pub fn run(
 
     let mut had_targets = false;
     let mut lure_present: Option<bool> = None;
-    let mut last_lure_check = Instant::now() - Duration::from_secs(10);
     loop {
         if !cap.read(&mut frame)? || frame.empty() {
             continue;
@@ -94,12 +95,23 @@ pub fn run(
         }
         had_targets = !targets.is_empty();
 
-        // the lure buff changes slowly (~10-min duration), so check it every couple
-        // of seconds to keep the cost off the detection hot path
+        // the lure buff lasts ~10 min, so it only needs checking once per cast cycle —
+        // the controller sets `check_lure` after each cast. Match only the top-right
+        // quadrant, where the buff bar always sits, so this (infrequent) check is cheap
+        // and never stalls the capture thread with a full-frame template match.
         if let Some(ref matcher) = lure {
-            if last_lure_check.elapsed() >= Duration::from_secs(2) {
-                last_lure_check = Instant::now();
-                match matcher.present(&frame) {
+            if check_lure.swap(false, Ordering::Relaxed) {
+                let quadrant = Rect::new(
+                    (width / 2) as i32,
+                    0,
+                    (width / 2) as i32,
+                    (height / 2) as i32,
+                );
+                let present = Mat::roi(&frame, quadrant)
+                    .and_then(|r| r.try_clone())
+                    .map_err(anyhow::Error::from)
+                    .and_then(|region| matcher.present(&region));
+                match present {
                     Ok(p) => {
                         if lure_present != Some(p) {
                             tracing::info!(present = p, "lure status");

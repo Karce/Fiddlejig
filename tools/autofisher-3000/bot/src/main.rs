@@ -11,6 +11,8 @@ use autofisher::state::{step, Action, FishingState, StepCtx};
 use clap::Parser;
 use opencv::prelude::*;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::watch;
 use tokio::time;
@@ -98,15 +100,20 @@ async fn main() -> Result<()> {
     };
     let lure = build_lure_matcher(&cfg)?;
 
+    // the controller flips this on after each cast so the capture thread re-reads the
+    // lure once per cycle (the buff lasts ~10 min); starts true for the first cast.
+    let check_lure = Arc::new(AtomicBool::new(true));
     let (tx, rx) = watch::channel(CaptureState::default());
     let debug = args.debug;
-    let capture_thread =
-        std::thread::spawn(move || capture::run(pipeline, detector, lure, tx, debug));
+    let capture_check_lure = Arc::clone(&check_lure);
+    let capture_thread = std::thread::spawn(move || {
+        capture::run(pipeline, detector, lure, capture_check_lure, tx, debug)
+    });
 
     tracing::info!("fishing — Ctrl-C to stop (or `q` in the debug window)");
     tokio::select! {
         _ = tokio::signal::ctrl_c() => tracing::info!("stopping (Ctrl-C)"),
-        res = run_controller(rx, &portal, &cfg) => res?,
+        res = run_controller(rx, &portal, &cfg, &check_lure) => res?,
         res = wait_for_thread(capture_thread) => res?,
     }
 
@@ -120,6 +127,7 @@ async fn run_controller(
     rx: watch::Receiver<CaptureState>,
     portal: &PortalSession,
     cfg: &Config,
+    check_lure: &AtomicBool,
 ) -> Result<()> {
     let mut state = FishingState::new(Instant::now(), cfg);
     let mut ticker = time::interval(Duration::from_millis(50));
@@ -157,6 +165,13 @@ async fn run_controller(
             tracing::warn!(
                 "bobber lost before confirm — missed bite (lower stability_ms / raise flicker_ms)"
             );
+        }
+        // every cast lands in Settling — entering it means we just cast, so ask the
+        // capture thread to re-read the lure once for the next cycle's cast decision.
+        let cast = matches!(next, FishingState::Settling { .. })
+            && !matches!(state, FishingState::Settling { .. });
+        if cast {
+            check_lure.store(true, Ordering::Relaxed);
         }
         state = next;
         for action in actions {

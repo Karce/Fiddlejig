@@ -107,7 +107,7 @@ impl Default for Config {
             // cost. Full width keeps the bobber at its trained scale.
             roi: Some((0.0, 0.0, 1.0, 0.5)),
             min_neighbors: 2,
-            stability_ms: 500,
+            stability_ms: 600,
             flicker_ms: 250,
             stability_radius: 40.0,
             lure_threshold: 0.7,
