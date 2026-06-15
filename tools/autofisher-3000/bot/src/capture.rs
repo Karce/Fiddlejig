@@ -32,13 +32,14 @@ const WINDOW: &str = "autofisher-3000";
 
 /// Build the GStreamer pipeline string for OpenCV's `VideoCapture`.
 ///
-/// `videorate` caps the stream to `target_fps` *before* the BGR readback, so the
-/// ~60→`target_fps` reduction also cuts the per-frame GPU→system-memory copy at the
-/// source (not just the detection work downstream).
+/// `videorate` thins the stream to `target_fps` **before** `videoconvert`, so the
+/// expensive GPU→system-memory BGR readback only runs on the frames we keep (~10/s)
+/// rather than every frame the compositor produces (which tracks the game's high
+/// render rate). That cuts both CPU and the capture-side GPU load at the source.
 pub fn pipeline(fd: RawFd, node_id: u32, target_fps: u32) -> String {
     format!(
-        "pipewiresrc fd={fd} path={node_id} ! videoconvert ! videorate ! \
-         video/x-raw,format=BGR,framerate={target_fps}/1 ! \
+        "pipewiresrc fd={fd} path={node_id} ! videorate ! video/x-raw,framerate={target_fps}/1 ! \
+         videoconvert ! video/x-raw,format=BGR ! \
          appsink drop=true max-buffers=2 sync=false"
     )
 }

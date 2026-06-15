@@ -1,12 +1,13 @@
-//! Learned (ONNX) bobber detector, run in pure Rust via `tract`.
+//! Learned (ONNX) bobber detector, run via ONNX Runtime (the `ort` crate).
 //!
-//! A YOLO11-n detect head — exported with `nms=False` so the graph stays
-//! `tract`-friendly — replaces the Haar cascade. It generalizes across scenery
-//! (zones) where the cascade was brittle. The flow: letterbox a (optional) ROI crop
-//! of the frame to the model's square input, run inference, decode the
-//! `(1, 4+nc, anchors)` head, apply a confidence gate + IoU NMS in Rust, and map the
-//! surviving box centers **back to full-frame coordinates** — so click points stay
-//! in frame/portal space, exactly like the cascade's outputs.
+//! A YOLO11-n detect head — exported with `nms=False` so we do NMS ourselves —
+//! replaces the Haar cascade. It generalizes across scenery (zones) where the cascade
+//! was brittle. The flow: letterbox a (optional) ROI crop of the frame to the model's
+//! square input, run inference, decode the `(1, 4+nc, anchors)` head, apply a
+//! confidence gate + IoU NMS in Rust, and map the surviving box centers **back to
+//! full-frame coordinates** — so click points stay in frame/portal space, exactly
+//! like the cascade's outputs. ORT is multi-threaded, so it is much faster than a
+//! single-threaded pure-Rust runtime at the same input size.
 
 use crate::detect::Detector;
 use crate::frame::Frame;
@@ -14,11 +15,10 @@ use crate::state::Point;
 use anyhow::Result;
 use opencv::core::{Mat, Rect, Scalar, Size, BORDER_CONSTANT};
 use opencv::prelude::*;
+use ort::session::builder::GraphOptimizationLevel;
+use ort::session::Session;
+use ort::value::Tensor;
 use std::path::Path;
-use tract_onnx::prelude::*;
-
-/// The optimized, runnable typed plan produced by `into_runnable()`.
-type OnnxModel = TypedRunnableModel<TypedModel>;
 
 /// One decoded detection, in letterboxed model-input pixel coordinates.
 struct Det {
@@ -30,7 +30,7 @@ struct Det {
 }
 
 pub struct NnDetector {
-    model: OnnxModel,
+    model: Session,
     /// Square model input edge in px — must equal the export `imgsz`.
     input: i32,
     conf_threshold: f32,
@@ -50,12 +50,15 @@ impl NnDetector {
     ) -> Result<Self> {
         let path = model_path.as_ref();
         anyhow::ensure!(path.exists(), "ONNX model not found: {}", path.display());
-        let n = input as usize;
-        let model = tract_onnx::onnx()
-            .model_for_path(path)?
-            .with_input_fact(0, f32::fact([1, 3, n, n]).into())?
-            .into_optimized()?
-            .into_runnable()?;
+        // ORT's fluent builder uses a parameterized error type that isn't `Send`, so
+        // map each step to anyhow explicitly rather than relying on `?` coercion.
+        let mut builder = Session::builder()
+            .map_err(|e| anyhow::anyhow!("ORT session builder: {e}"))?
+            .with_optimization_level(GraphOptimizationLevel::Level3)
+            .map_err(|e| anyhow::anyhow!("ORT optimization level: {e}"))?;
+        let model = builder
+            .commit_from_file(path)
+            .map_err(|e| anyhow::anyhow!("loading ONNX {}: {e}", path.display()))?;
         Ok(Self {
             model,
             input,
@@ -119,36 +122,36 @@ impl Detector for NnDetector {
         let mut rgb = Mat::default();
         opencv::imgproc::cvt_color_def(&padded, &mut rgb, opencv::imgproc::COLOR_BGR2RGB)?;
 
-        // HWC u8 → NCHW f32 / 255
+        // HWC u8 → NCHW f32 / 255 (flat, the layout ORT expects)
         let bytes = rgb.data_bytes()?;
         let nn = n as usize;
-        let tensor: Tensor =
-            tract_ndarray::Array4::<f32>::from_shape_fn((1, 3, nn, nn), |(_, c, y, x)| {
-                bytes[(y * nn + x) * 3 + c] as f32 / 255.0
-            })
-            .into();
-
-        let result = self.model.run(tvec!(tensor.into()))?;
-        let view = result[0]
-            .to_array_view::<f32>()?
-            .into_dimensionality::<tract_ndarray::Ix3>()?;
-        let shape = view.shape().to_vec();
-        anyhow::ensure!(shape[0] == 1, "unexpected output batch {:?}", shape);
+        let mut data = vec![0f32; 3 * nn * nn];
+        for y in 0..nn {
+            for x in 0..nn {
+                for c in 0..3 {
+                    data[c * nn * nn + y * nn + x] = bytes[(y * nn + x) * 3 + c] as f32 / 255.0;
+                }
+            }
+        }
+        let tensor = Tensor::from_array(([1_usize, 3, nn, nn], data))?;
+        let outputs = self.model.run(ort::inputs![tensor])?;
+        let (shape, out) = outputs[0].try_extract_tensor::<f32>()?;
+        anyhow::ensure!(
+            shape.len() == 3 && shape[0] == 1,
+            "unexpected output shape {shape:?}"
+        );
 
         // head is (1, 4+nc, anchors); some exports transpose to (1, anchors, 4+nc).
         // the attribute axis (4 box coords + nc class scores) is the smaller one.
-        let transposed = shape[1] > shape[2];
-        let (n_attr, n_anchor) = if transposed {
-            (shape[2], shape[1])
-        } else {
-            (shape[1], shape[2])
-        };
+        let (d1, d2) = (shape[1] as usize, shape[2] as usize);
+        let transposed = d1 > d2;
+        let (n_attr, n_anchor) = if transposed { (d2, d1) } else { (d1, d2) };
         anyhow::ensure!(n_attr >= 5, "expected >=5 output attributes, got {n_attr}");
         let at = |attr: usize, anchor: usize| -> f32 {
             if transposed {
-                view[[0, anchor, attr]]
+                out[anchor * n_attr + attr]
             } else {
-                view[[0, attr, anchor]]
+                out[attr * n_anchor + anchor]
             }
         };
 
@@ -359,5 +362,11 @@ mod tests {
         };
         report("cascade", &mut cascade);
         report("nn", &mut nn);
+        // top-half ROI (full width): bobbers/buffs never appear in the bottom half, so
+        // this trims false positives (action bars, character) without shrinking the
+        // bobber — full width keeps it at its trained scale, so recall should hold
+        let mut nn_roi =
+            NnDetector::load(&p, 960, 0.25, 0.45, Some((0.0, 0.0, 1.0, 0.5))).expect("load roi");
+        report("nn+roi", &mut nn_roi);
     }
 }

@@ -23,5 +23,6 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"
 clap = { version = "4", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
-# Pure-Rust ONNX inference for the learned bobber detector (no native runtime).
-tract-onnx = "0.21"
+# ONNX Runtime inference for the learned bobber detector (multi-threaded; the
+# `download-binaries` default fetches a prebuilt ORT, so no system package needed).
+ort = "=2.0.0-rc.12"

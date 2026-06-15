@@ -23,9 +23,9 @@ GStreamer pipewiresrc → OpenCV VideoCapture → Frame
   opens one linked ScreenCast+RemoteDesktop session; OpenCV's `VideoCapture`
   (GStreamer / `pipewiresrc`) pulls frames as `Mat`s on a dedicated thread.
 - **Detection** (`detect.rs`, `nn.rs`) — two backends behind the `Detector` trait,
-  selected by config: `CascadeDetector` (OpenCV Haar cascade, default) and
-  `NnDetector` (a trained YOLO11-n ONNX run in pure Rust via [`tract`](https://crates.io/crates/tract)).
-  `LureMatcher` template-matches the lure-buff icon. See **Detector backends** below.
+  selected by config: `NnDetector` (a trained YOLO11-n ONNX via ONNX Runtime
+  [`ort`](https://crates.io/crates/ort), **default**) and `CascadeDetector` (OpenCV Haar
+  cascade). `LureMatcher` template-matches the lure-buff icon. See **Detector backends**.
 - **Logic** (`state.rs`) — a **pure** `step(state, ctx) -> (state, [Action])`. No I/O,
   no clock reads, no sleeps; timing is encoded as deadlines in the state. Invalid
   states are unrepresentable, so the whole loop is exhaustively unit-tested with zero
@@ -69,7 +69,10 @@ cargo build --release
 Requirements: a native **Wayland GNOME** session (its portal backend
 `gnome-remote-desktop` provides both ScreenCast and RemoteDesktop), **PipeWire** + the
 `pipewiresrc` GStreamer element, **OpenCV** built with GStreamer (Fedora's is), and
-`clang`/`libclang` for the `opencv` crate's bindgen. `Cargo.lock` is committed.
+`clang`/`libclang` for the `opencv` crate's bindgen. `Cargo.lock` is committed. The NN
+backend uses [`ort`](https://crates.io/crates/ort) (ONNX Runtime); its `download-binaries`
+feature fetches a prebuilt ORT at build time, so no system ONNX package is needed (the
+first build needs network).
 
 ## Run
 
@@ -120,11 +123,10 @@ different resolution or lure, capture a fresh one:
 
 Two detectors sit behind the `Detector` trait, picked by `Config::backend`:
 
-- **`cascade`** (default) — the OpenCV Haar cascade. Fast and cheap, but
-  scenery-sensitive: it needs per-zone retraining and misses bites in zones it wasn't
-  trained on.
-- **`nn`** — a YOLO11-n detector trained on the same splash labels, exported to ONNX
-  and run in pure Rust via `tract` (no native runtime). Far more robust across zones.
+- **`nn`** (default) — a YOLO11-n detector trained on the splash labels, exported to
+  ONNX and run via ONNX Runtime (`ort`, multi-threaded). Robust across zones.
+- **`cascade`** — the OpenCV Haar cascade. Scenery-sensitive: it needs per-zone
+  retraining and misses bites in zones it wasn't trained on. Kept as a fallback.
 
 Measured over the local corpus (447 images; `cargo test --release compare_cascade_vs_nn
 -- --ignored --nocapture`):
@@ -132,20 +134,20 @@ Measured over the local corpus (447 images; `cargo test --release compare_cascad
 | backend | recall (splash) | false-pos | inference (CPU, 960²) |
 |---|---|---|---|
 | cascade | 79.4% | 0.3% | ~42 ms |
-| nn (YOLO11-n) | **98.5%** | 1.6% | ~327 ms |
+| nn (YOLO11-n, ort) | **98.5%** | 1.6% | **~25 ms** |
+| **nn + top-half ROI** (default) | 97.1% | 1.6% | ~25 ms |
 
-The NN is the clear accuracy winner (and held-out val mAP@50 was 0.995). It is **not
-yet the default** because at 960² on CPU it runs ~327 ms/inference (~3 fps) — heavier
-than the cascade, which works against the low-CPU goal. To make it the default,
-either:
-- **shrink the input** — retrain on **ROI crops** at a small `imgsz` (so the bobber
-  stays large) and set a `roi` + smaller `nn_input_size`; or
-- **swap the runtime to [`ort`](https://crates.io/crates/ort)** (ONNX Runtime) for a
-  multi-threaded ~3–5× speedup at full 960² — the `Detector` trait makes this a
-  drop-in for `NnDetector`.
+The NN wins on **both** recall (98.5% vs 79.4%; held-out val mAP@50 = 0.995) **and**
+speed (ORT is multi-threaded — ~13× faster than a single-threaded pure-Rust runtime, and
+faster than the cascade), so it is the **default**.
 
-Try the NN today with `backend = nn` (accepting the higher CPU). Training/export is
-documented in [`training/nn/README.md`](training/nn/README.md).
+**On the ROI** (`Config::roi`, normalized `x,y,w,h`): the default crops to the **top half**
+(`(0, 0, 1, 0.5)`). Full width keeps the bobber at its trained scale (so recall barely
+moves — 97.1% vs 98.5%), while dropping the bottom half — where the bobber never lands but
+the action bars / character do — trims in-game false positives. A *tighter* crop (e.g.
+upper-middle) shrinks the bobber ~2× and loses far casts, so it hurts recall (~91%); avoid
+it unless you also retrain on ROI crops at a small `imgsz` (which would additionally buy
+speed). Set `roi = None` for full-frame.
 
 ## Configuration
 
@@ -179,18 +181,17 @@ cargo fmt --check
 
 The state machine has full unit coverage: grace → cast, settle, the stability gate
 (reel-after-stable, flicker tolerance, transient-FP rejection), looting, and the lure
-decision. Smoke tests load each detector (the cascade `.xml` and the `tract` ONNX) and
+decision. Smoke tests load each detector (the cascade `.xml` and the ORT ONNX) and
 run them on a blank frame. The ignored tests run each backend over the local
 (gitignored) corpus and print recall / false-positive / timing per backend.
 
 ## Roadmap
 
-- **Learned detection backend — done, pending perf.** A YOLO11-n ONNX (`NnDetector`,
-  `tract`) is implemented and beats the cascade on recall (98.5% vs 79.4%; see
-  **Detector backends**). Remaining work to make it the default: cut its ~327 ms CPU
-  inference via an ROI-crop model at small `imgsz`, or swap `tract` → `ort` for a
-  multi-threaded speedup. (A local vision LLM stays out of scope — far too slow for
-  the per-frame splash window.)
+- **Learned detection backend — done.** A YOLO11-n ONNX (`NnDetector`, ONNX Runtime via
+  `ort`) is the default: it beats the cascade on recall (98.5% vs 79.4%) **and** speed
+  (~25 ms vs ~42 ms; see **Detector backends**). Optional follow-up: an ROI-crop model at
+  a small `imgsz` to gain headroom + trim false positives. (A local vision LLM stays out
+  of scope — far too slow for the per-frame splash window.)
 - **Fold `training/` into the workspace.** It's the original screen-capture/train tool
   (Rust, `portal-screencast` + opencv `0.86`); that opencv crate predates system
   OpenCV 4.13, so it's currently a standalone, excluded crate. Migrate it to opencv

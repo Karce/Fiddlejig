@@ -94,16 +94,20 @@ impl Default for Config {
             mouse_park: (100.0, 500.0),
             lure_icon: Some("icons/lure_2560x1440.png".to_string()),
             target_fps: 10,
-            // default to the cascade until the NN is validated to beat it (Phase 4);
-            // nn_input_size must match the export imgsz (trained at 960).
-            backend: DetectorBackend::Cascade,
+            // the NN beats the cascade on recall (98.5% vs 79.4%) AND speed (~25ms vs
+            // ~42ms) via ORT, so it is the default. nn_input_size must match the export
+            // imgsz (trained at 960).
+            backend: DetectorBackend::Nn,
             nn_model: "models/bobber.onnx".to_string(),
             nn_input_size: 960,
             nn_conf_threshold: 0.25,
             nn_iou_threshold: 0.45,
-            roi: None,
+            // crop to the top half (full width): bobbers never appear in the bottom half
+            // (action bars / character), so this trims false positives at a tiny recall
+            // cost. Full width keeps the bobber at its trained scale.
+            roi: Some((0.0, 0.0, 1.0, 0.5)),
             min_neighbors: 2,
-            stability_ms: 350,
+            stability_ms: 500,
             flicker_ms: 250,
             stability_radius: 40.0,
             lure_threshold: 0.7,

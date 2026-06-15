@@ -1,7 +1,7 @@
 # Training the NN bobber detector
 
 This is the offline pipeline that produces `bot/models/bobber.onnx` — the learned
-replacement for the Haar cascade. The Rust bot loads the exported ONNX via `tract`
+replacement for the Haar cascade. The Rust bot loads the exported ONNX via ONNX Runtime (`ort`)
 (see the `Detector` trait and roadmap in the main README). Everything here runs
 outside the Rust build; the generated dataset and training runs are gitignored.
 
@@ -65,18 +65,19 @@ Train and **infer at the same `imgsz`** so the bobber's apparent size matches
 > inference cost is still too high after Phase 0's fps cap — getting the model
 > *robust* comes first.
 
-## 3. Export to tract-safe ONNX
+## 3. Export to ONNX
 
 ```sh
 yolo export model=training/nn/runs/bobber/weights/best.pt format=onnx \
   imgsz=960 opset=12 simplify=True nms=False dynamic=False
 ```
 
-- **`nms=False`** is essential — embedded NMS uses ops `tract` can't run; the Rust
-  side does NMS itself.
-- `opset=12` + `simplify=True` + `dynamic=False` maximize `tract` compatibility.
-- Optionally open the result in [netron](https://netron.app) and confirm there's no
-  `NonMaxSuppression` / `ScatterND` / `GridSample` node.
+- **`nms=False`** — the Rust side does NMS itself; keeping NMS out of the graph avoids
+  exotic ops and works with any ONNX runtime (it was also required for the `tract`
+  experiment we benchmarked against).
+- `opset=12` + `simplify=True` + `dynamic=False` keep the graph simple and broadly
+  compatible.
+- Optionally open the result in [netron](https://netron.app) to inspect the ops.
 
 ## 4. Deploy
 
