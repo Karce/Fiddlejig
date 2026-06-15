@@ -2,11 +2,12 @@
 //!
 //! Frames are pulled from the portal's PipeWire stream through OpenCV's
 //! `VideoCapture` (GStreamer backend — Fedora's OpenCV is built with it), which
-//! hands us `Mat`s directly. Each frame is run through the cascade detector and
-//! the resulting bobber centers are published to the controller via a watch
-//! channel. Runs on a dedicated blocking thread.
+//! hands us `Mat`s directly. Each frame is run through the active [`Detector`]
+//! backend and the resulting bobber centers are published to the controller via a
+//! watch channel. Runs on a dedicated blocking thread.
 
-use crate::detect::{rect_center, CascadeDetector, LureMatcher};
+use crate::detect::{Detector, LureMatcher};
+use crate::frame::Frame;
 use crate::state::Point;
 use anyhow::{Context, Result};
 use opencv::core::Scalar;
@@ -30,10 +31,15 @@ pub struct CaptureState {
 const WINDOW: &str = "autofisher-3000";
 
 /// Build the GStreamer pipeline string for OpenCV's `VideoCapture`.
-pub fn pipeline(fd: RawFd, node_id: u32) -> String {
+///
+/// `videorate` caps the stream to `target_fps` *before* the BGR readback, so the
+/// ~60→`target_fps` reduction also cuts the per-frame GPU→system-memory copy at the
+/// source (not just the detection work downstream).
+pub fn pipeline(fd: RawFd, node_id: u32, target_fps: u32) -> String {
     format!(
-        "pipewiresrc fd={fd} path={node_id} ! videoconvert ! \
-         video/x-raw,format=BGR ! appsink drop=true max-buffers=2 sync=false"
+        "pipewiresrc fd={fd} path={node_id} ! videoconvert ! videorate ! \
+         video/x-raw,format=BGR,framerate={target_fps}/1 ! \
+         appsink drop=true max-buffers=2 sync=false"
     )
 }
 
@@ -50,7 +56,7 @@ fn open(pipeline: &str) -> Result<videoio::VideoCapture> {
 /// Capture + detect until the window is closed (`q`, debug) or the channel drops.
 pub fn run(
     pipeline: String,
-    mut detector: CascadeDetector,
+    mut detector: Box<dyn Detector + Send>,
     lure: Option<LureMatcher>,
     tx: watch::Sender<CaptureState>,
     debug: bool,
@@ -74,10 +80,12 @@ pub fn run(
         if !cap.read(&mut frame)? || frame.empty() {
             continue;
         }
-        let rects = detector.detect_rects(&frame)?;
         let width = frame.cols() as u32;
         let height = frame.rows() as u32;
-        let targets: Vec<Point> = rects.iter().map(rect_center).collect();
+        // bridge the Mat into an owned Frame so the detector backend stays
+        // opencv-agnostic (cheap at the capped framerate)
+        let snapshot = Frame::new(frame.data_bytes()?.to_vec(), width, height);
+        let targets = detector.detect(&snapshot)?;
 
         // log on the rising edge so a cast bobber shows up in the console
         if !targets.is_empty() && !had_targets {
@@ -102,6 +110,25 @@ pub fn run(
             }
         }
 
+        if debug {
+            // mark each detected center (the trait returns points, not boxes)
+            for p in &targets {
+                imgproc::circle(
+                    &mut frame,
+                    opencv::core::Point::new(p.x as i32, p.y as i32),
+                    12,
+                    Scalar::new(0.0, 255.0, 0.0, 0.0),
+                    2,
+                    imgproc::LINE_8,
+                    0,
+                )?;
+            }
+            highgui::imshow(WINDOW, &frame)?;
+            if highgui::wait_key(1)? == 'q' as i32 {
+                break;
+            }
+        }
+
         // a closed channel (controller gone) means it's time to stop
         if tx
             .send(CaptureState {
@@ -117,23 +144,6 @@ pub fn run(
             .is_err()
         {
             break;
-        }
-
-        if debug {
-            for r in &rects {
-                imgproc::rectangle(
-                    &mut frame,
-                    *r,
-                    Scalar::new(0.0, 255.0, 0.0, 0.0),
-                    2,
-                    imgproc::LINE_8,
-                    0,
-                )?;
-            }
-            highgui::imshow(WINDOW, &frame)?;
-            if highgui::wait_key(1)? == 'q' as i32 {
-                break;
-            }
         }
     }
     Ok(())

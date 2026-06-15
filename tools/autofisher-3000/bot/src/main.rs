@@ -3,8 +3,9 @@
 
 use anyhow::{Context, Result};
 use autofisher::capture::{self, CaptureState};
-use autofisher::config::Config;
-use autofisher::detect::{CascadeDetector, LureMatcher};
+use autofisher::config::{Config, DetectorBackend};
+use autofisher::detect::{CascadeDetector, Detector, LureMatcher};
+use autofisher::nn::NnDetector;
 use autofisher::portal::PortalSession;
 use autofisher::state::{step, Action, FishingState, StepCtx};
 use clap::Parser;
@@ -67,7 +68,7 @@ async fn main() -> Result<()> {
         "portal stream ready"
     );
 
-    let pipeline = capture::pipeline(portal.pipewire_fd(), portal.node_id);
+    let pipeline = capture::pipeline(portal.pipewire_fd(), portal.node_id, cfg.target_fps);
 
     if let Some(path) = args.grab_frame {
         let path = path.to_string_lossy().into_owned();
@@ -76,9 +77,25 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    let model = args.model.unwrap_or_else(|| PathBuf::from(&cfg.model));
-    let detector = CascadeDetector::load(resolve(&model), cfg.min_neighbors)
-        .context("loading the cascade model")?;
+    let detector: Box<dyn Detector + Send> = match cfg.backend {
+        DetectorBackend::Cascade => {
+            let model = args.model.unwrap_or_else(|| PathBuf::from(&cfg.model));
+            Box::new(
+                CascadeDetector::load(resolve(&model), cfg.min_neighbors)
+                    .context("loading the cascade model")?,
+            )
+        }
+        DetectorBackend::Nn => Box::new(
+            NnDetector::load(
+                resolve(Path::new(&cfg.nn_model)),
+                cfg.nn_input_size,
+                cfg.nn_conf_threshold,
+                cfg.nn_iou_threshold,
+                cfg.roi,
+            )
+            .context("loading the ONNX model")?,
+        ),
+    };
     let lure = build_lure_matcher(&cfg)?;
 
     let (tx, rx) = watch::channel(CaptureState::default());
@@ -109,6 +126,13 @@ async fn run_controller(
     loop {
         ticker.tick().await;
         let snap = rx.borrow().clone();
+        let was_confirming = matches!(
+            state,
+            FishingState::Searching {
+                candidate: Some(_),
+                ..
+            }
+        );
         let (next, actions) = step(
             state,
             &StepCtx {
@@ -119,6 +143,21 @@ async fn run_controller(
                 cfg,
             },
         );
+        // a streak that lapses without reeling = the bobber flickered out before it
+        // could be confirmed (a missed bite) — surface it so the gate can be tuned
+        let reeled = actions.iter().any(|a| matches!(a, Action::RightClick));
+        let still_confirming = matches!(
+            next,
+            FishingState::Searching {
+                candidate: Some(_),
+                ..
+            }
+        );
+        if was_confirming && !still_confirming && !reeled {
+            tracing::warn!(
+                "bobber lost before confirm — missed bite (lower stability_ms / raise flicker_ms)"
+            );
+        }
         state = next;
         for action in actions {
             match action {

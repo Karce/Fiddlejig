@@ -10,5 +10,6 @@ pub mod capture;
 pub mod config;
 pub mod detect;
 pub mod frame;
+pub mod nn;
 pub mod portal;
 pub mod state;

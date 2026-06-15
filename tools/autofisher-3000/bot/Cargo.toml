@@ -23,3 +23,5 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"
 clap = { version = "4", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+# Pure-Rust ONNX inference for the learned bobber detector (no native runtime).
+tract-onnx = "0.21"

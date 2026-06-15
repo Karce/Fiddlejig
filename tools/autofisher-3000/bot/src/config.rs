@@ -5,6 +5,16 @@ use crate::state::Point;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
+/// Which detection backend the bot runs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DetectorBackend {
+    /// OpenCV Haar cascade (fast, scenery-brittle).
+    Cascade,
+    /// Learned YOLO ONNX via tract (robust across zones).
+    Nn,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Config {
@@ -34,6 +44,25 @@ pub struct Config {
     pub mouse_park: (f64, f64),
     /// Lure-buff template image, relative to the crate root (None until captured).
     pub lure_icon: Option<String>,
+    /// Capture framerate cap (frames/sec), enforced by GStreamer `videorate`. The
+    /// splash lasts ~1–2s, so ~10fps catches it with margin while slashing the cost
+    /// of the per-frame BGR readback and detection vs. the stream's native ~60fps.
+    pub target_fps: u32,
+
+    // --- detector backend ---
+    /// Which detector to run: the Haar cascade or the learned ONNX model.
+    pub backend: DetectorBackend,
+    /// ONNX model path (relative to the crate root), used when `backend = nn`.
+    pub nn_model: String,
+    /// Square model input edge in px — must equal the export `imgsz`.
+    pub nn_input_size: i32,
+    /// Confidence threshold (0–1) for NN detections.
+    pub nn_conf_threshold: f32,
+    /// NMS IoU threshold (0–1) for overlapping NN detections.
+    pub nn_iou_threshold: f32,
+    /// Optional ROI to crop before detection, normalized `(x, y, w, h)` in [0,1];
+    /// `None` = whole frame. Click coords are always mapped back to the full frame.
+    pub roi: Option<(f64, f64, f64, f64)>,
 
     // --- detection tuning ---
     /// Cascade `min_neighbors` — higher rejects more weak detections (false positives).
@@ -64,8 +93,17 @@ impl Default for Config {
             model: "models/bobber_z4_10v3.xml".to_string(),
             mouse_park: (100.0, 500.0),
             lure_icon: Some("icons/lure_2560x1440.png".to_string()),
+            target_fps: 10,
+            // default to the cascade until the NN is validated to beat it (Phase 4);
+            // nn_input_size must match the export imgsz (trained at 960).
+            backend: DetectorBackend::Cascade,
+            nn_model: "models/bobber.onnx".to_string(),
+            nn_input_size: 960,
+            nn_conf_threshold: 0.25,
+            nn_iou_threshold: 0.45,
+            roi: None,
             min_neighbors: 2,
-            stability_ms: 500,
+            stability_ms: 350,
             flicker_ms: 250,
             stability_radius: 40.0,
             lure_threshold: 0.7,

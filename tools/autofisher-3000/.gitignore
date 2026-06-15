@@ -17,3 +17,15 @@ training/positive/
 # OpenCV traincascade working dirs (intermediate stages / sample dumps)
 training/cascade/
 training/results/
+
+# YOLO dataset built from the corpus by training/nn/convert_labels.py (symlinks +
+# a data.yaml with an absolute path) and Ultralytics training runs. Regenerable;
+# the scripts + README under training/nn/ ARE committed.
+training/nn/dataset/
+training/nn/runs/
+
+# Ultralytics pretrained downloads (yolo11n.pt, yolo26n.pt) + stray run output that
+# lands in the working dir when training/exporting. Regenerable. NOTE: the *exported*
+# detector bot/models/bobber.onnx IS committed (it ships with the bot).
+*.pt
+/runs/
