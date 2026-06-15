@@ -64,7 +64,7 @@ impl Default for Config {
             model: "models/bobber_z4_10v3.xml".to_string(),
             mouse_park: (100.0, 500.0),
             lure_icon: Some("icons/lure_2560x1440.png".to_string()),
-            min_neighbors: 3,
+            min_neighbors: 2,
             stability_ms: 500,
             flicker_ms: 250,
             stability_radius: 40.0,

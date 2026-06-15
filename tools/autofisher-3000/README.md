@@ -156,7 +156,11 @@ training corpus.
   `0.98` + `ashpd` and add it as a workspace member.
 - **Resolution-independent lure matching** (scale the template / feature-match rather
   than a fixed-resolution PNG).
-- **Restore-token persistence** so the portal dialog only appears on first run.
+- **Skipping the portal dialog isn't possible** while input goes through the
+  RemoteDesktop portal — GNOME refuses to persist input-injecting sessions
+  (`org.freedesktop.portal.Error.InvalidArgument: Remote desktop sessions cannot
+  persist`). It would require moving input to uinput/ydotool with a ScreenCast-only
+  (persistable) capture session, at the cost of a coordinate-calibration step.
 
 ## Layout
 

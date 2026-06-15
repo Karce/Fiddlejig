@@ -2,13 +2,16 @@
 //!
 //! One RemoteDesktop session that *also* carries a ScreenCast stream, so the
 //! captured frames and the injected pointer/keyboard share a single coordinate
-//! space (no capture→screen calibration). GNOME shows a one-time "share screen +
-//! allow control" dialog on first start.
+//! space (no capture→screen calibration). GNOME shows a "share screen + allow
+//! control" dialog each run — it does **not** let a session that injects input
+//! persist its grant ("Remote desktop sessions cannot persist"), so the dialog
+//! can't be remembered while the portal is used for input.
 
 use anyhow::{Context, Result};
 use ashpd::desktop::remote_desktop::{DeviceType, KeyState, RemoteDesktop, SelectDevicesOptions};
 use ashpd::desktop::screencast::{CursorMode, Screencast, SelectSourcesOptions, SourceType};
 use ashpd::desktop::{PersistMode, Session};
+use ashpd::enumflags2::BitFlags;
 use std::os::fd::{AsRawFd, OwnedFd, RawFd};
 
 /// Linux evdev code for the right mouse button (BTN_RIGHT) — reels in the bobber.
@@ -59,8 +62,10 @@ impl PortalSession {
                 SelectSourcesOptions::default()
                     // keep the cursor out of the frame so it can't be mistaken for a bobber
                     .set_cursor_mode(CursorMode::Hidden)
-                    .set_sources(SourceType::Monitor | SourceType::Window)
+                    // windows-only so the picker opens straight to the window grid
+                    .set_sources(BitFlags::from(SourceType::Window))
                     .set_multiple(false)
+                    // GNOME forbids persisting an input-injecting session (see module docs)
                     .set_persist_mode(PersistMode::DoNot),
             )
             .await
