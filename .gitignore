@@ -15,8 +15,7 @@ tools/weakauras/.local/
 # LICENSE file) — kept local-only for diffing, never committed
 addons/WeaponSwingTimer-SixxFix/
 
-# Claude Code rules / overrides — kept local-only, never committed
-CLAUDE.md
+# Claude Code: CLAUDE.md is tracked (shared rules); CLAUDE.local.md is local-only (personal overrides)
 CLAUDE.local.md
 .claude/
 
