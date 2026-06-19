@@ -5,7 +5,7 @@ section. **Policy:** prefer a macro; build an addon only when a macro can't do i
 
 ## Now
 
-- [ ] **Refine existing macros** (provided by Keaton) — review, clean up, and
+- [ ] **Refine existing macros** (provided by Karce) — review, clean up, and
       either tighten as macros or, if a macro is insufficient, scope an addon.
   - [x] Smart pet attack + engage (hunter) → `macros/hunter/smart-pet-attack.md`.
         One-button engage + mouseover pet (target-splitting). Field-tested:

@@ -1,7 +1,7 @@
 ## Interface: 20505
 ## Title: ShotClock
 ## Notes: Hunter Auto Shot timer — reload bar + aim window. Engine based on WeaponSwingTimer by LeftHandedGlove & WatchYourSixx.
-## Author: Keaton, LeftHandedGlove, WatchYourSixx
+## Author: Karce, LeftHandedGlove, WatchYourSixx
 ## Version: 0.1.0
 ## SavedVariablesPerCharacter: ShotClockDB
 ## X-Category: Hunter
