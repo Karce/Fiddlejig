@@ -82,54 +82,119 @@ impl Detector for CascadeDetector {
     }
 }
 
-/// Detects whether the lure buff icon is on screen, by template-matching a cropped
-/// icon against the frame. Drives the decision to re-apply the lure.
+/// Detects whether the lure buff icon is on screen, by multi-scale template-matching a
+/// canonical icon against the frame. Drives the decision to re-apply the lure.
+///
+/// Resolution-independent: the buff icon's on-screen pixel size scales with the game's
+/// render resolution, so a single fixed-size template only matches one resolution. We
+/// keep one canonical template (captured at 2560x1440, the highest-detail icon we have),
+/// pre-downscale it across a scale band at load, and take the best match over all scales.
+/// This handles arbitrary resolutions with no per-resolution PNGs and no resolution
+/// plumbing from callers.
 pub struct LureMatcher {
-    template: Mat,
+    /// The canonical icon pre-scaled across the band (largest first). Built once at load.
+    templates: Vec<Mat>,
     threshold: f64,
 }
 
+/// Multi-scale band for the lure template. The canonical icon is captured at 2560x1440;
+/// at lower render resolutions the on-screen icon is smaller, so we DOWNSCALE the
+/// template. Empirically (TM_CCOEFF_NORMED) the correlation peak across scale is narrow —
+/// a 1080p frame peaks at ~0.85 near scale 0.75 but only ~0.70 at the naive resolution
+/// ratio 0.706 — so we sweep in fine 0.05 steps and take the global max. Downscale-only
+/// (cap just above 1.0): upscaling a ~34px template blurs it and depresses the match, so
+/// resolutions above the canonical's 1440 are out of scope (see the README roadmap).
+const LURE_SCALE_MIN: f64 = 0.50;
+const LURE_SCALE_MAX: f64 = 1.05;
+const LURE_SCALE_STEP: f64 = 0.05;
+
 impl LureMatcher {
-    /// Load the lure-buff icon template (a cropped screenshot of the buff icon).
+    /// Load the canonical lure-buff icon and pre-build the multi-scale template bank.
     pub fn load(icon_path: impl AsRef<Path>, threshold: f64) -> anyhow::Result<Self> {
         let path = icon_path.as_ref();
         let file = path.to_str().context("lure icon path is not valid UTF-8")?;
-        let template = opencv::imgcodecs::imread_def(file)
+        let canonical = opencv::imgcodecs::imread_def(file)
             .with_context(|| format!("loading lure icon {}", path.display()))?;
         anyhow::ensure!(
-            !template.empty(),
+            !canonical.empty(),
             "lure icon is empty or unreadable: {}",
             path.display()
         );
+        let templates = Self::build_scales(&canonical)?;
+        anyhow::ensure!(
+            !templates.is_empty(),
+            "no usable lure template scales from {}",
+            path.display()
+        );
         Ok(Self {
-            template,
+            templates,
             threshold,
         })
     }
 
-    /// Best template-match score (0–1) for the lure icon anywhere in the frame.
-    pub fn score(&self, bgr: &impl ToInputArray) -> anyhow::Result<f64> {
-        let mut result = Mat::default();
-        opencv::imgproc::match_template_def(
-            bgr,
-            &self.template,
-            &mut result,
-            opencv::imgproc::TM_CCOEFF_NORMED,
-        )?;
-        let mut max_val = 0.0;
-        opencv::core::min_max_loc(
-            &result,
-            None,
-            Some(&mut max_val),
-            None,
-            None,
-            &Mat::default(),
-        )?;
-        Ok(max_val)
+    /// Pre-scale the canonical template across the band, largest first. INTER_AREA is the
+    /// correct resampler for shrinking (it averages source pixels, preserving the small
+    /// icon's edges); INTER_LINEAR covers the rare at-or-above-1.0 step.
+    fn build_scales(canonical: &Mat) -> anyhow::Result<Vec<Mat>> {
+        let (cw, ch) = (canonical.cols(), canonical.rows());
+        let steps = ((LURE_SCALE_MAX - LURE_SCALE_MIN) / LURE_SCALE_STEP).round() as i32;
+        let mut templates = Vec::new();
+        for i in (0..=steps).rev() {
+            let scale = LURE_SCALE_MIN + LURE_SCALE_STEP * f64::from(i);
+            let nw = (f64::from(cw) * scale).round() as i32;
+            let nh = (f64::from(ch) * scale).round() as i32;
+            if nw < 4 || nh < 4 {
+                continue; // too small to correlate meaningfully
+            }
+            if nw == cw && nh == ch {
+                templates.push(canonical.try_clone()?); // scale ~1.0: no resample
+                continue;
+            }
+            let interp = if scale < 1.0 {
+                opencv::imgproc::INTER_AREA
+            } else {
+                opencv::imgproc::INTER_LINEAR
+            };
+            let mut scaled = Mat::default();
+            opencv::imgproc::resize(canonical, &mut scaled, Size::new(nw, nh), 0.0, 0.0, interp)?;
+            templates.push(scaled);
+        }
+        Ok(templates)
+    }
+
+    /// Best multi-scale template-match score (0–1) for the lure icon anywhere in `bgr`.
+    /// Templates larger than `bgr` in either dimension are skipped (match_template
+    /// requires template <= image); if every template is skipped the score is 0.0.
+    pub fn score(&self, bgr: &Mat) -> anyhow::Result<f64> {
+        let (rw, rh) = (bgr.cols(), bgr.rows());
+        let mut best = 0.0_f64;
+        for template in &self.templates {
+            if template.cols() > rw || template.rows() > rh {
+                continue;
+            }
+            let mut result = Mat::default();
+            opencv::imgproc::match_template_def(
+                bgr,
+                template,
+                &mut result,
+                opencv::imgproc::TM_CCOEFF_NORMED,
+            )?;
+            let mut max_val = 0.0;
+            opencv::core::min_max_loc(
+                &result,
+                None,
+                Some(&mut max_val),
+                None,
+                None,
+                &Mat::default(),
+            )?;
+            best = best.max(max_val);
+        }
+        Ok(best)
     }
 
     /// True if the lure buff is found above the confidence threshold.
-    pub fn present(&self, bgr: &impl ToInputArray) -> anyhow::Result<bool> {
+    pub fn present(&self, bgr: &Mat) -> anyhow::Result<bool> {
         Ok(self.score(bgr)? >= self.threshold)
     }
 }
@@ -201,6 +266,47 @@ mod tests {
         assert!(
             with_hit > 0,
             "detector found zero bobbers across the entire positive corpus — likely broken"
+        );
+    }
+
+    fn canonical_lure_matcher() -> LureMatcher {
+        let p = concat!(env!("CARGO_MANIFEST_DIR"), "/icons/lure_2560x1440.png");
+        LureMatcher::load(p, 0.7).expect("load canonical lure template")
+    }
+
+    #[test]
+    fn multiscale_lure_matches_native_1080p_icon() {
+        use opencv::core::{Scalar, CV_8UC3};
+        use opencv::imgcodecs;
+
+        // The matcher is built from the 2560x1440 canonical (pre-downscaled across the
+        // band). The fixture it must locate is the committed *native-1080p* render — so a
+        // pass proves cross-resolution matching, which the old fixed-scale matcher failed.
+        let matcher = canonical_lure_matcher();
+        let icon_path = concat!(env!("CARGO_MANIFEST_DIR"), "/icons/lure_1920x1080.png");
+        let icon = imgcodecs::imread_def(icon_path).expect("read 1080p icon fixture");
+        assert!(!icon.empty(), "1080p icon fixture is empty");
+
+        // Paste the icon onto a blank BGR canvas the size of a 1080p top-right quadrant.
+        let mut frame =
+            Mat::new_rows_cols_with_default(540, 960, CV_8UC3, Scalar::all(0.0)).unwrap();
+        let dst = Rect::new(700, 40, icon.cols(), icon.rows());
+        {
+            let mut roi = frame.roi_mut(dst).expect("roi_mut into frame");
+            icon.copy_to(&mut roi).expect("copy icon into frame region");
+        } // drop the mutable borrow before scoring
+
+        let score = matcher.score(&frame).expect("score runs");
+        assert!(
+            score >= 0.7,
+            "canonical multi-scale matcher should find the native-1080p icon, got {score:.3}"
+        );
+
+        // A blank frame must not register the lure (no false positive).
+        let blank = Mat::new_rows_cols_with_default(540, 960, CV_8UC3, Scalar::all(0.0)).unwrap();
+        assert!(
+            !matcher.present(&blank).expect("present runs on blank"),
+            "a blank frame must not register the lure as present"
         );
     }
 }

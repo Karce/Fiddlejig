@@ -131,13 +131,19 @@ CLI flags:
 
 ## Auto-lure
 
-The bot template-matches your lure-buff icon (`icons/lure_2560x1440.png`) anywhere in
-the frame, ~every 2s. When the buff is missing it presses the lure key, waits
-`lure_cast_secs`, then casts. The template is **resolution/UI-specific** — for a
-different resolution or lure, capture a fresh one:
+The bot template-matches your lure-buff icon (`icons/lure_2560x1440.png`) in the
+top-right buff area, once per cast. When the buff is missing it presses the lure key,
+waits `lure_cast_secs`, then casts. The match is **multi-scale**: the one canonical
+template (captured at 2560x1440) is pre-downscaled across a scale band, so it works at
+**any render resolution** without a per-resolution PNG — 1080p, 1440p, etc. (resolutions
+*above* 1440p aren't covered yet; see the Roadmap).
+
+You only need a fresh template if you switch to a **different lure** (a different buff
+icon):
 
 1. Apply the lure in-game, then `--grab-frame frame.png`.
-2. Crop **just the icon art** (no border/background) to `icons/lure_<WxH>.png`.
+2. Crop **just the icon art** (no border/background) from your highest available
+   resolution to `icons/lure_<WxH>.png`.
 3. Point `Config.lure_icon` at it and verify with `--check-lure frame.png` (aim for a
    score well above the `lure_threshold`).
 
@@ -236,8 +242,13 @@ run them on a blank frame. The ignored tests run each backend over the local
   (Rust, `portal-screencast` + opencv `0.86`); that opencv crate predates system
   OpenCV 4.13, so it's currently a standalone, excluded crate. Migrate it to opencv
   `0.98` + `ashpd` and add it as a workspace member.
-- **Resolution-independent lure matching** (scale the template / feature-match rather
-  than a fixed-resolution PNG).
+- **Resolution-independent lure matching — done.** The lure matcher (`LureMatcher`)
+  pre-downscales one canonical template across a scale band and takes the best match, so
+  a single 2560x1440 PNG works at any resolution at/below 1440p (no per-resolution PNGs).
+  Follow-up: resolutions *above* the canonical (e.g. 4K) need a larger template — the
+  buff icon is bigger than canonical there, and upscaling a ~34px template blurs it. Fix
+  by capturing a higher-res canonical (e.g. `lure_3840x2160.png`) and selecting it (or
+  the band) by frame resolution; `Config::lure_icon` already lets you point at one.
 - **Skipping the portal dialog isn't possible** while input goes through the
   RemoteDesktop portal — GNOME refuses to persist input-injecting sessions
   (`org.freedesktop.portal.Error.InvalidArgument: Remote desktop sessions cannot

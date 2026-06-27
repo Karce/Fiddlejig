@@ -35,14 +35,16 @@ pub struct Config {
     pub cast_keys: Vec<char>,
     /// Action-bar key that applies the lure.
     pub lure_key: char,
-    /// Skip lure detection/application entirely (e.g. no template for this resolution).
+    /// Skip lure detection/application entirely (e.g. fishing without a lure).
     pub skip_lure: bool,
     /// Cascade model to load, relative to the crate root.
     pub model: String,
     /// Where to park the cursor after casting so it doesn't cover the bobber
     /// (frame coordinates).
     pub mouse_park: (f64, f64),
-    /// Lure-buff template image, relative to the crate root (None until captured).
+    /// Canonical lure-buff template (captured at 2560x1440), relative to the crate root.
+    /// Multi-scale matched, so one template works at any render resolution (None to
+    /// disable).
     pub lure_icon: Option<String>,
     /// Capture framerate cap (frames/sec), enforced by GStreamer `videorate`. The
     /// splash lasts ~1–2s, so ~10fps catches it with margin while slashing the cost
