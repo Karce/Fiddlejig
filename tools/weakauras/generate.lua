@@ -42,8 +42,8 @@ local ROOT = SCRIPT_DIR .. "/../.."
 -- on both installs), so one copy of the libs serializes for both. Re-check those two
 -- pins in Init.lua/WeakAuras.lua when WeakAuras updates.
 local FLAVORS = {
-  { key = "anniversary", heading = "TBC Anniversary (2.5.x)", tocversion = 20505 },
-  { key = "era", heading = "Classic Era (1.15)", tocversion = 11508 },
+  { key = "anniversary", heading = "TBC Anniversary (2.5.x)", tocversion = 20506 },
+  { key = "era", heading = "Classic Era (1.15)", tocversion = 11509 },
 }
 local WA_VERSION = "5.21.7"
 local INTERNAL_VERSION = 90

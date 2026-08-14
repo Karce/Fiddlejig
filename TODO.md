@@ -44,7 +44,7 @@ section. **Policy:** prefer a macro; build an addon only when a macro can't do i
 - [x] Global rules: privacy + code-quality in `~/.claude/CLAUDE.md`.
 - [x] API sourcing decided + documented (`docs/api/`); `.luarc.json` (Lua 5.1 +
       WoW API) and `scripts/setup-luals.sh` added.
-- [x] Confirmed TBC Anniversary interface number: `20505` (patch 2.5.5).
+- [x] Confirmed TBC Anniversary interface number: `20506` (patch 2.5.6).
 
 ## Backlog / ideas
 

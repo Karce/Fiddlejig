@@ -109,7 +109,7 @@ Copy this `JojaAutoPetter/` folder into your WoW install's `Interface/AddOns/`
 it on the character-select addons screen. Requires a Hunter (Feed Pet, level 10+).
 
 Both clients are supported from the same sources: the Era client loads
-`JojaAutoPetter_Vanilla.toc` (Interface 11508), Anniversary falls back to the plain
-`JojaAutoPetter.toc` (Interface 20505). The happiness tiers, Feed Pet mechanics, and
+`JojaAutoPetter_Vanilla.toc` (Interface 11509), Anniversary falls back to the plain
+`JojaAutoPetter.toc` (Interface 20506). The happiness tiers, Feed Pet mechanics, and
 the APIs used (`GetPetFoodTypes`, `GetPetHappiness`, `UnitBuff`, secure buttons) are
 identical on both.

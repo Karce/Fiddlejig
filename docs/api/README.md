@@ -59,7 +59,7 @@ clone so the setup works in any editor and regardless of where the `.toc` lives.
 
 ## Patch / interface number
 
-- Current TBC Anniversary patch: **2.5.5** → `.toc` `## Interface: 20505`.
+- Current TBC Anniversary patch: **2.5.6** → `.toc` `## Interface: 20506`.
 - Re-confirm after each patch (in-game `select(4, GetBuildInfo())`, or
   [`Gethe/wow-ui-source`](https://github.com/Gethe/wow-ui-source)).
 

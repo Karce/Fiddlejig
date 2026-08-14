@@ -1,4 +1,4 @@
-## Interface: 20505
+## Interface: 20506
 ## Title: Joja Mart's Auto-Petter
 ## Notes: Auto-picks the best food for your pet's diet and feeds it with one key — a Stardew Valley Auto-Petter homage.
 ## Author: Karce

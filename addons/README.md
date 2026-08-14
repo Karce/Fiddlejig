@@ -17,7 +17,7 @@ addons screen. (A sync script that reads `config/paths.local.md` is on the TODO.
 ## .toc essentials (TBC Anniversary / 2.5.x)
 
 ```
-## Interface: 20505
+## Interface: 20506
 ## Title: <AddonName>
 ## Notes: <what it does>
 ## Author: <you>
@@ -27,5 +27,5 @@ addons screen. (A sync script that reads `config/paths.local.md` is on the TODO.
 <AddonName>.lua
 ```
 
-> `20505` = patch 2.5.5 (TBC Anniversary). Re-confirm after each patch — see
+> `20506` = patch 2.5.6 (TBC Anniversary). Re-confirm after each patch — see
 > [`../docs/api/`](../docs/api/).

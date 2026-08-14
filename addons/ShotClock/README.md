@@ -64,5 +64,5 @@ Deliberate behavior differences from upstream:
 Copy this `ShotClock/` folder into your WoW install's `Interface/AddOns/`
 (`_anniversary_` for TBC Anniversary, `_classic_era_` for Classic Era), then
 enable it on the character-select addons screen. The Era client loads
-`ShotClock_Vanilla.toc` (Interface 11508); Anniversary falls back to the plain
-`ShotClock.toc` (Interface 20505).
+`ShotClock_Vanilla.toc` (Interface 11509); Anniversary falls back to the plain
+`ShotClock.toc` (Interface 20506).

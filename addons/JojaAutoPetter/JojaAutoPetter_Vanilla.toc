@@ -1,6 +1,6 @@
 # Classic Era flavor — the 1.15 client prefers <Addon>_Vanilla.toc; the plain
 # .toc remains the TBC Anniversary (2.5.x) load. Same sources on both clients.
-## Interface: 11508
+## Interface: 11509
 ## Title: Joja Mart's Auto-Petter
 ## Notes: Auto-picks the best food for your pet's diet and feeds it with one key — a Stardew Valley Auto-Petter homage.
 ## Author: Karce

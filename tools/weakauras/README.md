@@ -12,8 +12,8 @@ decoding each string back and asserting the trigger fields survived. Output is
 **deterministic**: regenerating unchanged specs yields byte-identical strings (a
 sorted `pairs` is installed before LibSerialize loads), so docs never churn.
 
-Each aura is generated once per **client flavor** — TBC Anniversary (`toc 20505`)
-and Classic Era (`toc 11508`). The flavors differ only in that version tag, which
+Each aura is generated once per **client flavor** — TBC Anniversary (`toc 20506`)
+and Classic Era (`toc 11509`). The flavors differ only in that version tag, which
 is what keeps WeakAuras from warning "made for a different game version" on import.
 
 ## One-time setup
