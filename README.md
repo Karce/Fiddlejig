@@ -1,91 +1,67 @@
 # Fiddlejig
 
-A collection of player-aiding tools — **macros**, **addons**, and **WeakAuras** —
-for **World of Warcraft Classic: The Burning Crusade Anniversary** (WoW Classic 2.5.x).
+Quality-of-life **macros**, **addons**, **WeakAuras**, and **tools** for
+WoW Classic. Supports **TBC Anniversary** (2.5.6) and **Classic Era** (1.15.9).
 
-Fiddlejig is a grab-bag of quality-of-life and automation helpers: one-click
-rotation aids, smart utility macros, and small addons for things a macro can't
-quite reach. It's an undead-themed name fitting for tools that do the player's
-busywork for them.
+## Macros first
 
-## Philosophy: macros first, addons as a fallback
+Every feature starts as a macro. An addon gets built only when a macro can't
+do the job: persistent state, event handling, UI, or logic past the 255-char
+limit.
 
-Macros are lightweight, share-able, and need no installation beyond pasting them
-in. So **every feature starts as a macro**. We only build a full addon when a
-macro genuinely can't do the job — when it needs persistent state, event
-handling, a UI, or logic past the 255-character macro limit.
+## What's here
 
-## What's here (planned & in progress)
+| Category | Contents |
+|---|---|
+| **Addons** | [JojaAutoPetter](addons/JojaAutoPetter/) — auto-feed your hunter pet the best food in bags. [ShotClock](addons/ShotClock/) — hunter Auto Shot reload bar + aim window. |
+| **Macros** | [Hunter](macros/hunter/), [Warrior](macros/warrior/) — rotation and utility macros. |
+| **WeakAuras** | [Warrior](weakauras/warrior/) — Battle Shout / Rend reminders (importable `!WA:2!` strings). |
+| **Tools** | [Autofisher-3000](tools/autofisher-3000/) — vision-based fishing bot (Rust + OpenCV, static-linked). [WA generator](tools/weakauras/) — builds deterministic WeakAura import strings from specs. |
 
-- **Hunter pet feeding** — feed your pet the best available food in your bags.
-- **ShotClock** — a minimal hunter Auto Shot timer (reload bar + aim window).
-- **Rotation helpers** — one-click / castsequence macros to smooth out rotations.
-- **Warrior WeakAuras** — reminders to keep Battle Shout up and Rend on your target.
-- ...more to come. See [`TODO.md`](TODO.md) for the working feature list.
+See [`TODO.md`](TODO.md) for the backlog.
 
 ## Repository layout
 
 ```
 Fiddlejig/
-├── macros/        # Macro collection, grouped by class/category
-│   └── <category>/<name>.md   # description + macro text + usage notes
-├── addons/        # Full addons (fallback when a macro won't do)
-│   └── <AddonName>/<AddonName>.toc + Lua sources
-├── weakauras/     # Importable WeakAuras (!WA:2! strings), grouped by class
-│   └── <category>/<name>.md   # description + import string + how it's wired
-├── tools/         # Dev tooling (e.g. the WeakAuras string generator)
-├── docs/          # Reference & conventions
-│   ├── api/       # WoW Classic TBC Anniversary (2.5.x) Lua API reference
-│   └── conventions.md
-├── config/        # Local config (reference, not code)
-│   ├── paths.example.md    # template (committed)
-│   └── paths.local.md      # your local game paths (gitignored)
-├── .luarc.json    # Lua Language Server config (Lua 5.1 + WoW API)
-├── .vscode/       # Recommended extensions (extensions.json is shared)
-├── scripts/       # Helper scripts (setup, install/sync, etc.)
-└── TODO.md        # Working feature backlog
+├── macros/<class>/          Documented macros (description + code fence)
+├── addons/<Name>/           Full addons (.toc + Lua); dual-TOC for both clients
+├── weakauras/<class>/       Importable WA strings, one per client flavor
+├── tools/
+│   ├── autofisher-3000/     Fishing bot (Rust); builds in distrobox
+│   └── weakauras/           WA import-string generator (Lua)
+├── docs/api/                WoW Classic TBC API reference
+├── docs/conventions.md      Project conventions
+├── types/                   Lua Language Server type stubs (WoW API)
+├── config/paths.example.md  Local game-path template (fill in gitignored copy)
+├── scripts/                 Dev helpers (LuaLS setup, etc.)
+├── CLAUDE.md                AI-assist project rules
+└── TODO.md                  Feature backlog
 ```
 
-> AI-assist rules live in a local-only `CLAUDE.local.md` (gitignored). Human-facing
-> conventions are in [`docs/conventions.md`](docs/conventions.md).
+## Supported clients
+
+Both clients load from the same addon sources via the dual-TOC pattern:
+the `_Vanilla.toc` (Interface 11509) is preferred by Classic Era; the plain
+`.toc` (Interface 20506) is loaded by TBC Anniversary.
 
 ## Getting started
 
-1. Copy the config template and fill in your local paths:
+1. Copy the config template and fill in your local game paths:
    ```sh
    cp config/paths.example.md config/paths.local.md
    ```
-   `config/paths.local.md` is gitignored — your machine-specific paths never get
-   committed.
-2. Browse [`macros/`](macros/) and copy a macro into the game's macro UI
-   (`/macro`), or install an addon by copying its folder into your
-   `Interface/AddOns` directory.
+2. **Macros** — copy the code fence from any file under `macros/` into the
+   in-game macro editor (`/macro`).
+3. **Addons** — copy the addon folder into `Interface/AddOns/` and enable it
+   on the character-select screen.
+4. **WeakAuras** — paste the `!WA:2!` string for your client into `/wa` →
+   Import. Requires the [WeakAuras](https://www.curseforge.com/wow/addons/weakauras-2) addon.
 
-## Using the macros
+## Contributing
 
-WoW macros are plain text, **limited to 255 characters**. Each macro file
-documents what it does and includes the macro body in a code fence — copy that
-body into the in-game macro editor.
-
-## Using the addons
-
-Copy an addon folder from `addons/` into your WoW install's `Interface/AddOns/`
-directory (`_anniversary_` or `_classic_era_`), then enable it on the
-character-select addons screen. Addons that support both clients ship a
-`<AddonName>_Vanilla.toc` alongside the plain `.toc`.
-
-## Using the WeakAuras
-
-Each file under [`weakauras/`](weakauras/) has a `!WA:2!` import string per
-supported client (TBC Anniversary and Classic Era). In game, type `/wa` →
-**Import**, paste the string for your client, and confirm. Requires the
-[WeakAuras](https://www.curseforge.com/wow/addons/weakauras-2) addon.
-
-## Contributing / development
-
-See [`docs/conventions.md`](docs/conventions.md) for project conventions. Note this
-is a **public** repository — never commit local paths, usernames, or any personal
-information.
+See [`docs/conventions.md`](docs/conventions.md). This is a **public repo** —
+never commit local paths or personal information.
 
 ## License
 
