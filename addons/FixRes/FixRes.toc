@@ -1,0 +1,8 @@
+## Interface: 20506
+## Title: FixRes
+## Notes: Auto-corrects broken startup resolution on some Linux compositors. Needs event handling at login — macros cannot fire automatically.
+## Author: Karce
+## SavedVariables: FixResDB
+## IconTexture: Interface\AddOns\FixRes\Icon.tga
+
+Core.lua
