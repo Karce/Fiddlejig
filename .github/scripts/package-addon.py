@@ -33,9 +33,17 @@ def collect_files(addon_dir):
 
 
 def inject_version(content, version):
+    if re.search(r"^## Version:", content, re.MULTILINE):
+        return re.sub(
+            r"^(## Version:).*$",
+            rf"\1 {version}",
+            content,
+            count=1,
+            flags=re.MULTILINE,
+        )
     return re.sub(
-        r"^(## Version:).*$",
-        rf"\1 {version}",
+        r"^(## Interface:.*(?:\r?\n))",
+        rf"\1## Version: {version}\n",
         content,
         count=1,
         flags=re.MULTILINE,
