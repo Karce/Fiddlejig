@@ -1,0 +1,56 @@
+name: Release ShotClock
+
+on:
+  push:
+    branches: [main]
+    paths: ['addons/ShotClock/**']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      ADDON: ShotClock
+      CF_PROJECT_ID: "1652667"
+      VERSION: "1.0.${{ github.run_number }}"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package addon
+        run: python3 .github/scripts/package-addon.py "addons/$ADDON" "$VERSION" --out-dir dist
+
+      - name: Resolve CurseForge game version IDs
+        id: versions
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          ids=$(python3 .github/scripts/resolve-game-versions.py \
+            "addons/$ADDON/$ADDON.toc" \
+            "addons/$ADDON/${ADDON}_Vanilla.toc")
+          echo "ids=$ids" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to CurseForge
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          changelog="${{ github.event.head_commit.message }}"
+          changelog=$(echo "$changelog" | head -1)
+          changelog="$changelog (${GITHUB_SHA::7})"
+          metadata=$(python3 -c "
+          import json, sys
+          print(json.dumps({
+              'changelog': sys.argv[1],
+              'changelogType': 'markdown',
+              'displayName': f'{sys.argv[2]} {sys.argv[3]}',
+              'gameVersions': json.loads(sys.argv[4]),
+              'releaseType': 'release',
+          }))" "$changelog" "$ADDON" "$VERSION" '${{ steps.versions.outputs.ids }}')
+          resp=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "https://wow.curseforge.com/api/projects/$CF_PROJECT_ID/upload-file" \
+            -H "X-Api-Token: $CF_API_TOKEN" \
+            -F "metadata=$metadata" \
+            -F "file=@dist/$ADDON-$VERSION.zip")
+          if [ "$resp" != "200" ]; then
+            echo "ERROR: CurseForge upload returned HTTP $resp" >&2
+            exit 1
+          fi
+          echo "Uploaded $ADDON $VERSION (HTTP $resp)"

@@ -58,6 +58,18 @@ the `_Vanilla.toc` (Interface 11509) is preferred by Classic Era; the plain
 4. **WeakAuras** — paste the `!WA:2!` string for your client into `/wa` →
    Import. Requires the [WeakAuras](https://www.curseforge.com/wow/addons/weakauras-2) addon.
 
+## CurseForge release pipeline
+
+Each addon has its own GitHub Actions workflow (`.github/workflows/`).
+On push to `main` touching an addon's directory, the workflow:
+
+- Packages the addon into a zip with version `1.0.<run_number>` injected into all TOC files
+- Resolves `## Interface:` numbers from both TOC flavors to CurseForge game-version IDs at run time
+- Uploads the zip to CurseForge via the Upload API
+
+**Required repo secret:** `CF_API_TOKEN` — a CurseForge API token with project upload permission.
+Generate one at [CurseForge Author Console](https://authors.curseforge.com/) → API tokens.
+
 ## Contributing
 
 See [`docs/conventions.md`](docs/conventions.md). This is a **public repo** —
