@@ -41,13 +41,18 @@ def inject_version(content, version):
             count=1,
             flags=re.MULTILINE,
         )
-    return re.sub(
+    eol = "\r\n" if "\r\n" in content else "\n"
+    result = re.sub(
         r"^(## Interface:.*(?:\r?\n))",
-        rf"\1## Version: {version}\n",
+        rf"\1## Version: {version}" + eol,
         content,
         count=1,
         flags=re.MULTILINE,
     )
+    if result == content:
+        print("ERROR: TOC has neither ## Version: nor ## Interface:", file=sys.stderr)
+        sys.exit(1)
+    return result
 
 
 def build_zip(addon_dir, version, out_dir):
