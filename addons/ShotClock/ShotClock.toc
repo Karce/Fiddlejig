@@ -4,6 +4,7 @@
 ## Author: Karce, LeftHandedGlove, WatchYourSixx
 ## SavedVariablesPerCharacter: ShotClockDB
 ## X-Category: Hunter
+## IconTexture: Interface\Icons\INV_Weapon_Rifle_07
 
 Bar.lua
 Core.lua
