@@ -36,19 +36,28 @@ local function SetCVarSafe(name, value)
 end
 
 -- Detect actual game resolution via available APIs.
+-- Returns width, height, source-label (or nil, nil, nil).
 local function GetActualResolution()
+	-- GetPhysicalScreenSize: confirmed on Classic Era 1.15.9 and TBC 2.5.6.
+	if GetPhysicalScreenSize then
+		local ok, w, h = pcall(GetPhysicalScreenSize)
+		if ok and w and h then return w, h, "physical" end
+	end
 	-- Legacy API: queries GX engine state directly, not CVar-backed.
 	if GetCurrentResolution and GetScreenResolutions then
 		local ok, idx = pcall(GetCurrentResolution)
 		if ok and idx and idx > 0 then
 			local ok2, all = pcall(function() return {GetScreenResolutions()} end)
 			if ok2 and all and all[idx] then
-				return ParseRes(all[idx])
+				local w, h = ParseRes(all[idx])
+				if w then return w, h, "screen" end
 			end
 		end
 	end
 	-- gxResolution CVar: may reflect live GX state on some clients.
-	return ParseRes(GetCVarSafe("gxResolution"))
+	local w, h = ParseRes(GetCVarSafe("gxResolution"))
+	if w then return w, h, "cvar" end
+	return nil, nil, nil
 end
 
 -- Desired resolution: SavedVariables override > gxFullscreenResolution CVar > default.
@@ -84,8 +93,9 @@ end
 local function CheckAndFix()
 	local dw, dh = GetDesiredResolution()
 	local aw, ah = GetActualResolution()
-	if not aw then return end
-	if aw == dw and ah == dh then return end
+	if aw and aw == dw and ah == dh then return end
+	-- Detection unavailable: apply unconditionally (the startup bug is
+	-- deterministic and RestartGx at correct values is harmless).
 	ApplyFix(dw, dh)
 end
 
@@ -112,9 +122,13 @@ SlashCmdList.FIXRES = function(msg)
 	msg = strlower(strtrim(msg or ""))
 	if msg == "status" then
 		local dw, dh = GetDesiredResolution()
-		local aw, ah = GetActualResolution()
+		local aw, ah, source = GetActualResolution()
 		Print("desired: " .. dw .. "x" .. dh)
-		Print("actual: " .. (aw and (aw .. "x" .. ah) or "detection unavailable"))
+		if aw then
+			Print("actual: " .. aw .. "x" .. ah .. " (" .. source .. ")")
+		else
+			Print("actual: detection unavailable")
+		end
 		if FixResDB.width then
 			Print("override: " .. FixResDB.width .. "x" .. FixResDB.height)
 		end
