@@ -1,0 +1,9 @@
+# Classic Era flavor — the 1.15 client prefers <Addon>_Vanilla.toc; the plain
+# .toc remains the TBC Anniversary (2.5.x) load. Same sources on both clients.
+## Interface: 11509
+## Title: FixRes
+## Notes: Auto-corrects broken startup resolution on some Linux compositors. Needs event handling at login — macros cannot fire automatically.
+## Author: Karce
+## SavedVariables: FixResDB
+
+Core.lua
