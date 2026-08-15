@@ -70,6 +70,16 @@ On push to `main` touching an addon's directory, the workflow:
 **Required repo secret:** `CF_API_TOKEN` — a CurseForge API token with project upload permission.
 Generate one at [CurseForge Author Console](https://authors.curseforge.com/) → API tokens.
 
+A daily game-version watcher keeps `## Interface:` numbers current automatically:
+
+- Polls the Blizzard build API at 17:00 UTC (after Tuesday maintenance); also `workflow_dispatch`
+- Opens a PR with the TOC edits and merges it — the merge triggers both release workflows
+- **Required repo secret:** `BUMP_PUSH_TOKEN` — fine-grained PAT scoped to this repo,
+  **Contents: Read and write** + **Pull requests: Read and write** (pushes with the
+  default `GITHUB_TOKEN` do not trigger downstream workflows)
+- A release run may fail if CurseForge has not yet registered the new game version —
+  re-run the release workflow manually once it does
+
 ## Contributing
 
 See [`docs/conventions.md`](docs/conventions.md). This is a **public repo** —
