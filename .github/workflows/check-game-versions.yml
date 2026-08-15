@@ -38,8 +38,8 @@ jobs:
             exit 0
           fi
           if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            echo "Branch $BRANCH already exists on remote — skipping"
-            exit 0
+            echo "Branch $BRANCH exists on remote with no open PR — deleting orphan"
+            git push origin --delete "$BRANCH"
           fi
 
           parts=""

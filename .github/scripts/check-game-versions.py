@@ -139,13 +139,16 @@ def main():
 
     gh_output("changed", str(changed).lower())
     if changed:
-        ann = products["wow_anniversary"]
-        era = products["wow_classic_era"]
-        gh_output("branch", f"bump/interface-{ann['new_interface']}-{era['new_interface']}")
-        for prefix, d in [("ann", ann), ("era", era)]:
+        branch_parts = []
+        for product, prefix in [("wow_anniversary", "ann"), ("wow_classic_era", "era")]:
+            if product not in products:
+                continue
+            d = products[product]
+            branch_parts.append(str(d["new_interface"]))
             gh_output(f"{prefix}_old", d["old_interface"])
             gh_output(f"{prefix}_new", d["new_interface"])
             gh_output(f"{prefix}_ver", d["version"])
+        gh_output("branch", "bump/interface-" + "-".join(branch_parts))
 
     return 0
 
