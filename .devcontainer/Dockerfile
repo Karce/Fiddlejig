@@ -3,9 +3,10 @@ FROM registry.fedoraproject.org/fedora-toolbox:44
 RUN dnf install -y \
     gcc-c++ cmake ninja-build make \
     clang clang-devel llvm-devel \
-    pkgconf-pkg-config curl tar git \
+    pkgconf-pkg-config curl tar git gh \
     gstreamer1-devel gstreamer1-plugins-base-devel \
-    gtk3-devel libpng-devel zlib-devel \
+    gtk3-devel libpng-devel zlib-devel openssl-devel \
+    fish \
     && dnf clean all
 
 ARG OPENCV_VERSION=4.13.0
@@ -39,6 +40,6 @@ ENV OPENCV_LINK_PATHS=/opt/opencv-static/lib,/opt/opencv-static/lib/opencv4/3rdp
 ENV OPENCV_LINK_LIBS=static=opencv_highgui,static=opencv_objdetect,static=opencv_calib3d,static=opencv_features2d,static=opencv_flann,static=opencv_videoio,static=opencv_imgcodecs,static=opencv_imgproc,static=opencv_core,static=ittnotify,static=libjpeg-turbo,static=libwebp,static=libpng,static=libtiff,static=libopenjp2,static=IlmImf,static=zlib,gtk-3,gdk-3,pangocairo-1.0,cairo-gobject,atk-1.0,pango-1.0,gdk_pixbuf-2.0,gio-2.0,cairo,harfbuzz,gstapp-1.0,gstpbutils-1.0,gstvideo-1.0,gstriff-1.0,gstaudio-1.0,gstbase-1.0,gstreamer-1.0,gobject-2.0,glib-2.0,stdc++,dl,m,pthread,rt
 ENV OPENCV_DISABLE_PROBES=cmake,pkg_config,vcpkg,vcpkg_cmake
 
-RUN useradd -m -s /bin/bash vscode && \
+RUN useradd -m -s /usr/bin/fish vscode && \
     echo "vscode ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/vscode
 USER vscode

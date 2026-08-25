@@ -11,6 +11,13 @@
   "postCreateCommand": "bash scripts/setup-luals.sh",
   "customizations": {
     "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "fish",
+        "terminal.integrated.profiles.linux": {
+          "fish": { "path": "/usr/bin/fish" },
+          "bash": { "path": "/bin/bash" }
+        }
+      },
       "extensions": [
         "anthropic.claude-code",
         "rust-lang.rust-analyzer",
