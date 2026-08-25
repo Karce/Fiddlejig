@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "anthropic.claude-code",
+    "rust-lang.rust-analyzer",
     "sumneko.lua",
     "ketho.wow-api",
     "JohnnyMorganz.stylua",

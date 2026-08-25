@@ -1,0 +1,24 @@
+{
+  "name": "Fiddlejig",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {}
+  },
+  "updateRemoteUserUID": false,
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash scripts/setup-luals.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "rust-lang.rust-analyzer",
+        "sumneko.lua",
+        "ketho.wow-api",
+        "JohnnyMorganz.stylua",
+        "EditorConfig.EditorConfig"
+      ]
+    }
+  }
+}

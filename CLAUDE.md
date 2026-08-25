@@ -45,7 +45,7 @@ won't resolve against base image's `mesa-libgbm`, so `rpm-ostree`/`ujust update`
 refuse to advance.) So:
 
 - **Build in container, not host.** When code needs build dependency not
-  already present, install inside [distrobox](https://distrobox.it/)/toolbox
+  already present, install inside a [devcontainer](https://containers.dev/)
   (compilers, `-devel` headers, …) — never `rpm-ostree install` onto host.
 - **Produce binary that runs on bare host.** Static-link niche dependency (or
   otherwise avoid at runtime) so artifact needs only base-image libraries; confirm
@@ -53,14 +53,15 @@ refuse to advance.) So:
 - **Keep host's layered-package set empty** (or minimal) so OS updates keep flowing.
 
 Worked example — **Autofisher-3000** (`tools/autofisher-3000`), Rust tool that links
-**OpenCV statically**. `tools/autofisher-3000/devbox.sh` drives flow:
+**OpenCV statically**. The repo-wide devcontainer (`.devcontainer/`) carries the
+toolchain and a pre-built static OpenCV:
 
 ```sh
+# VS Code: "Reopen in Container" (or: devcontainer up --workspace-folder .)
 cd tools/autofisher-3000
-./devbox.sh box && ./devbox.sh deps && ./devbox.sh opencv   # one-time: container + static OpenCV
-./devbox.sh build                                           # cargo build --release (static link)
-./devbox.sh test                                            # or: ./devbox.sh in-box <cmd>
-./target/release/autofisher-3000 --debug                    # runs on the host (ldd: no libopencv_*.so)
+cargo build --release
+cargo test
+./target/release/autofisher-3000 --debug    # runs on the host (ldd: no libopencv_*.so)
 ```
 
-Reuse this pattern (`devbox.sh`-style wrapper + static link) for future native-dep tools.
+Reuse this pattern (devcontainer with pre-built static deps) for future native-dep tools.

@@ -58,35 +58,32 @@ Initializing → Casting → (ApplyingLure →) Settling → Searching → Looti
 - **Looting** — pause `post_catch_ms` after a reel so loot/animation resolves before
   recasting (so a lure re-apply keypress isn't swallowed by the catch).
 
-## Build (distrobox, statically linked OpenCV)
+## Build (devcontainer, statically linked OpenCV)
 
 OpenCV is linked **statically**, so the release binary runs on a stock GNOME/Wayland host
 with **no system OpenCV — and no `-devel` packages — installed**. The build runs inside a
-Fedora [distrobox](https://distrobox.it/) that carries the toolchain and a from-source
-static OpenCV; only the base-image GStreamer/GTK/glib libraries stay dynamic (they ship
-with the desktop). [`devbox.sh`](devbox.sh) drives the whole flow:
+VS Code [devcontainer](https://containers.dev/) (`.devcontainer/` at the repo root) that
+carries the toolchain and a pre-built static OpenCV; only the base-image
+GStreamer/GTK/glib libraries stay dynamic (they ship with the desktop).
 
 ```sh
+# VS Code: "Reopen in Container" (or: devcontainer up --workspace-folder /path/to/Fiddlejig)
 cd tools/autofisher-3000
-./devbox.sh box      # create the Fedora build container
-./devbox.sh deps     # install build deps in it (clang, cmake, gstreamer/gtk -devel, …)
-./devbox.sh opencv   # build a static OpenCV into ~/.local/share/autofisher (one-time, slow)
-./devbox.sh build    # cargo build --release, statically linking that OpenCV
+cargo build --release
 ```
 
 The binary lands at `target/release/autofisher-3000` and runs **directly on the host** —
 confirm with `ldd target/release/autofisher-3000` (no `libopencv_*.so` should appear).
-`./devbox.sh test` runs the suite in the container; `./devbox.sh update` upgrades it
-(delete `~/.local/share/autofisher/opencv-*-static` and re-run `opencv build` if the
-host's OpenCV version moves). Run `./devbox.sh` with no args to list all subcommands.
+The first container build takes ~15–40 minutes (OpenCV compile); subsequent builds use
+the cached image.
 
 **Why static / why a container:** the `opencv` crate links OpenCV's shared libraries by
 default, which would force `opencv` plus a chain of `-devel` packages to be layered onto an
-image-based host like Bluefin — and that layering can block OS image updates. Building a
-static OpenCV in a throwaway container keeps the host free of layered packages. A *fully*
-static (musl) binary isn't possible here because capture relies on GStreamer dlopening
-`libgstpipewire.so` at runtime, so the GStreamer/GTK stack stays dynamic (it's part of the
-base GNOME image).
+image-based host like Bluefin — and that layering can block OS image updates. The
+devcontainer pre-builds a static OpenCV into the container image, keeping the host free of
+layered packages. A *fully* static (musl) binary isn't possible here because capture relies
+on GStreamer dlopening `libgstpipewire.so` at runtime, so the GStreamer/GTK stack stays
+dynamic (it's part of the base GNOME image).
 
 Runtime requirements (host): a native **Wayland GNOME** session (its portal backend
 `gnome-remote-desktop` provides ScreenCast + RemoteDesktop), **PipeWire** with the
@@ -200,14 +197,13 @@ Notable tuning knobs:
 
 ## Tests & quality
 
-Run these inside the build container (they need the static OpenCV) — `./devbox.sh test`
-for the suite, or `./devbox.sh in-box <cmd>` for the rest:
+Run these inside the devcontainer (they need the static OpenCV):
 
 ```sh
-./devbox.sh test                            # pure state machine + both detector smoke tests
-./devbox.sh in-box cargo test --release compare_cascade_vs_nn -- --ignored --nocapture
-./devbox.sh in-box cargo clippy --all-targets -- -D warnings
-./devbox.sh in-box cargo fmt --check
+cargo test                                  # pure state machine + both detector smoke tests
+cargo test --release compare_cascade_vs_nn -- --ignored --nocapture
+cargo clippy --all-targets -- -D warnings
+cargo fmt --check
 ```
 
 The state machine has full unit coverage: grace → cast, settle, the stability gate
@@ -260,7 +256,6 @@ run them on a blank frame. The ignored tests run each backend over the local
 ```
 tools/autofisher-3000/
 ├── Cargo.toml          # workspace (member: bot; training excluded — see Roadmap)
-├── devbox.sh           # build/test in a distrobox with a statically-linked OpenCV
 ├── bot/
 │   ├── Cargo.toml
 │   ├── src/            # main, portal, capture, detect, state, config, frame

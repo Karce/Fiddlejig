@@ -28,7 +28,7 @@ Fiddlejig/
 ├── addons/<Name>/           Full addons (.toc + Lua); dual-TOC for both clients
 ├── weakauras/<class>/       Importable WA strings, one per client flavor
 ├── tools/
-│   ├── autofisher-3000/     Fishing bot (Rust); builds in distrobox
+│   ├── autofisher-3000/     Fishing bot (Rust); builds in devcontainer
 │   └── weakauras/           WA import-string generator (Lua)
 ├── docs/api/                WoW Classic TBC API reference
 ├── docs/conventions.md      Project conventions
