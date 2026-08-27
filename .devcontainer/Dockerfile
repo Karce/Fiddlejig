@@ -24,8 +24,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # deps of flatpak-cargo-generator.py, so packaging/cargo-sources.json can be
     # regenerated in here whenever Cargo.lock moves
     python3 python3-aiohttp python3-yaml python3-tomlkit \
-    # general tooling
-    ca-certificates curl git gh sudo fish \
+    # general tooling. openssh-client is NOT optional: the git remote is
+    # git@github.com, and Debian's git does not pull it in under
+    # --no-install-recommends, so push/fetch fail with "cannot run ssh".
+    ca-certificates curl git openssh-client gh sudo fish \
     && rm -rf /var/lib/apt/lists/*
 
 # uid 1000 matches the host user, so bind-mounted files keep their ownership
