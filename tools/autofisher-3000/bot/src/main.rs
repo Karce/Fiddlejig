@@ -23,7 +23,8 @@ use tokio::time;
     about = "World of Warcraft fishing bot (Wayland-native)"
 )]
 struct Args {
-    /// Show a live window with detections drawn (press `q` to quit).
+    /// Show a live window with detections drawn (press `q` to quit). Needs a
+    /// GUI-enabled OpenCV — available in the devcontainer, not in the Flatpak.
     #[arg(long)]
     debug: bool,
     /// Capture one frame to PATH and exit — use it to crop a lure-buff icon.
@@ -37,13 +38,39 @@ struct Args {
     check_lure: Option<PathBuf>,
 }
 
-/// Resolve a possibly-relative resource path against the crate root.
+/// Resolve a possibly-relative resource path against the first asset root that
+/// actually contains it.
+///
+/// Roots are tried in order: `$AUTOFISHER_ASSET_DIR`, then
+/// `<exe dir>/../share/autofisher-3000` (the installed layout — `/app/share/...`
+/// inside the Flatpak), then the crate root (`cargo run` / `cargo test` from the
+/// dev tree). If none of them has the file, fall back to the crate root so the
+/// caller's "not found" error still names a sensible path.
 fn resolve(p: &Path) -> PathBuf {
     if p.is_absolute() {
-        p.to_path_buf()
-    } else {
-        Path::new(env!("CARGO_MANIFEST_DIR")).join(p)
+        return p.to_path_buf();
     }
+    asset_roots()
+        .into_iter()
+        .map(|root| root.join(p))
+        .find(|candidate| candidate.exists())
+        .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join(p))
+}
+
+/// Candidate directories holding `models/` and `icons/`, most specific first.
+fn asset_roots() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    // Escape hatch: point a packaged build at a hand-retrained model without a rebuild.
+    if let Some(dir) = std::env::var_os("AUTOFISHER_ASSET_DIR") {
+        roots.push(PathBuf::from(dir));
+    }
+    // Installed layout: /app/bin/autofisher-3000 -> /app/share/autofisher-3000
+    let installed = std::env::current_exe()
+        .ok()
+        .and_then(|exe| Some(exe.parent()?.parent()?.join("share/autofisher-3000")));
+    roots.extend(installed);
+    roots.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")));
+    roots
 }
 
 #[tokio::main]

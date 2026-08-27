@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.karce.Autofisher3000</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Autofisher-3000</name>
+  <summary>Wayland-native World of Warcraft fishing bot</summary>
+  <developer id="io.github.karce">
+    <name>Keaton Bruce</name>
+  </developer>
+  <description>
+    <p>
+      A fishing bot for World of Warcraft that works on a native Wayland session.
+      It captures the game window through the XDG ScreenCast portal, locates the
+      bobber with a YOLO11-n ONNX model, and casts and reels through the XDG
+      RemoteDesktop portal.
+    </p>
+    <p>
+      Because capture and input both go through desktop portals, the sandbox needs
+      no display socket, no PipeWire socket, and no network access.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.karce.Autofisher3000.desktop</launchable>
+  <url type="homepage">https://github.com/Karce/Fiddlejig</url>
+  <url type="bugtracker">https://github.com/Karce/Fiddlejig/issues</url>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-08-27"/>
+  </releases>
+</component>

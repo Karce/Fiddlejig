@@ -4,9 +4,8 @@
 # committed — this is an application.
 target/
 
-# Portal restore token + ad-hoc frame grabs (machine-specific; a grab may show
-# your desktop). Lure-icon templates under bot/icons/ ARE committed.
-restore.token
+# Ad-hoc frame grabs (machine-specific; a grab may show your desktop).
+# Lure-icon templates under bot/icons/ ARE committed.
 frames/
 
 # Training screenshot corpus: kept locally to retrain the cascades, never
@@ -29,3 +28,12 @@ training/nn/runs/
 # detector bot/models/bobber.onnx IS committed (it ships with the bot).
 *.pt
 /runs/
+
+# Flatpak build state, created by flatpak-builder in this directory (that's where
+# packaging/README.md says to run it): the build tree, the cache, and the local
+# ostree repo — ~500 MB combined. The manifest, cargo-sources.json, .desktop and
+# .metainfo.xml under packaging/ ARE committed; none of this is.
+.flatpak-builder/
+/build/
+/repo/
+*.flatpak

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Autofisher-3000
+Comment=Wayland-native World of Warcraft fishing bot
+Exec=autofisher-3000
+Terminal=true
+Categories=Game;Utility;
+# CLI tool driven by flags — keep it out of the app grid.
+NoDisplay=true

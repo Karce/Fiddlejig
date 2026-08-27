@@ -14,6 +14,17 @@ path = "src/lib.rs"
 name = "autofisher-3000"
 path = "src/main.rs"
 
+[features]
+# Default = today's behaviour: ort-sys downloads a prebuilt ONNX Runtime at build
+# time and static-links it. Needs network. This is what the devcontainer and
+# `cargo test` use.
+default = ["ort-download"]
+ort-download = ["ort/download-binaries", "ort/tls-native", "ort/copy-dylibs"]
+# Flatpak/offline builds: dlopen libonnxruntime.so at runtime from $ORT_DYLIB_PATH.
+# Implies ort-sys/disable-linking, whose build script returns immediately, so no
+# build-time network access is even attempted.
+ort-dylib = ["ort/load-dynamic"]
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 anyhow = "1"
@@ -23,6 +34,13 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"
 clap = { version = "4", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
-# ONNX Runtime inference for the learned bobber detector (multi-threaded; the
-# `download-binaries` default fetches a prebuilt ORT, so no system package needed).
-ort = "=2.0.0-rc.12"
+# ONNX Runtime inference for the learned bobber detector (multi-threaded). How
+# libonnxruntime is obtained is chosen by the `ort-download` / `ort-dylib`
+# features above; this list is ort's default set minus those linking features, so
+# `--features ort-download` reproduces the stock build exactly (Cargo.lock unchanged).
+ort = { version = "=2.0.0-rc.12", default-features = false, features = [
+    "std",
+    "ndarray",
+    "tracing",
+    "api-24",
+] }

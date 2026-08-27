@@ -58,58 +58,71 @@ Initializing → Casting → (ApplyingLure →) Settling → Searching → Looti
 - **Looting** — pause `post_catch_ms` after a reel so loot/animation resolves before
   recasting (so a lure re-apply keypress isn't swallowed by the catch).
 
-## Build (devcontainer, statically linked OpenCV)
+## Install (Flatpak)
 
-OpenCV is linked **statically**, so the release binary runs on a stock GNOME/Wayland host
-with **no system OpenCV — and no `-devel` packages — installed**. The build runs inside a
-VS Code [devcontainer](https://containers.dev/) (`.devcontainer/` at the repo root) that
-carries the toolchain and a pre-built static OpenCV; only the base-image
-GStreamer/GTK/glib libraries stay dynamic (they ship with the desktop).
+The shippable artifact is a **Flatpak**. It bundles the entire native stack — glibc,
+GStreamer, OpenCV and ONNX Runtime — so it runs on any Flatpak-capable system with
+nothing installed on the host.
+
+```sh
+flatpak install -y flathub org.flatpak.Builder
+cd tools/autofisher-3000
+flatpak run org.flatpak.Builder --force-clean --user --install \
+  --install-deps-from=flathub --repo=repo \
+  build packaging/io.github.karce.Autofisher3000.yaml
+
+flatpak run io.github.karce.Autofisher3000
+```
+
+`flatpak-builder` is itself a Flatpak, so this works even on an immutable host with no
+package manager. For a redistributable single file, sandbox details and how to regenerate
+the vendored crate sources, see [`packaging/README.md`](packaging/README.md).
+
+**The sandbox is close to empty.** Capture and input both go through XDG portals, which
+every sandbox may use without declaring anything, so there is no display socket, no
+PipeWire socket and no network access — just `--filesystem=xdg-pictures:create` for
+`--grab-frame`.
+
+Runtime requirements: a native **Wayland GNOME** session (its portal backend
+`gnome-remote-desktop` provides ScreenCast + RemoteDesktop) and **PipeWire**. Everything
+else comes from the Flatpak runtime.
+
+## Build (devcontainer)
+
+For development and testing. The repo-wide VS Code
+[devcontainer](https://containers.dev/) (`.devcontainer/`, Debian 13) carries the Rust
+toolchain, OpenCV and GStreamer headers, so none of it touches the host.
 
 ```sh
 # VS Code: "Reopen in Container" (or: devcontainer up --workspace-folder /path/to/Fiddlejig)
 cd tools/autofisher-3000
 cargo build --release
+cargo test
 ```
 
-The binary lands at `target/release/autofisher-3000` and runs **directly on the host** —
-confirm with `ldd target/release/autofisher-3000` (no `libopencv_*.so` should appear).
-The first container build takes ~15–40 minutes (OpenCV compile); subsequent builds use
-the cached image.
-
-**Why static / why a container:** the `opencv` crate links OpenCV's shared libraries by
-default, which would force `opencv` plus a chain of `-devel` packages to be layered onto an
-image-based host like Bluefin — and that layering can block OS image updates. The
-devcontainer pre-builds a static OpenCV into the container image, keeping the host free of
-layered packages. A *fully* static (musl) binary isn't possible here because capture relies
-on GStreamer dlopening `libgstpipewire.so` at runtime, so the GStreamer/GTK stack stays
-dynamic (it's part of the base GNOME image).
-
-Runtime requirements (host): a native **Wayland GNOME** session (its portal backend
-`gnome-remote-desktop` provides ScreenCast + RemoteDesktop), **PipeWire** with the
-`pipewiresrc` GStreamer element, and the base GTK/GStreamer libraries — all standard on a
-Fedora/Bluefin GNOME desktop. No OpenCV package needed. `Cargo.lock` is committed. The NN
-backend bundles ONNX Runtime via [`ort`](https://crates.io/crates/ort) (its
-`download-binaries` feature fetches a prebuilt ORT at build time, so the first build needs
-network).
+This binary is for running **inside the container** — it links the container's glibc and
+OpenCV, so it will not run on the host. That is what the Flatpak is for. `Cargo.lock` is
+committed. The default `ort-download` feature fetches a prebuilt ONNX Runtime at build
+time, so the first build needs network; the Flatpak uses `ort-dylib` instead and builds
+fully offline.
 
 ## Run
 
 ```sh
-./target/release/autofisher-3000 --debug
+flatpak run io.github.karce.Autofisher3000
 ```
 
 - **First run:** GNOME shows a *"share your screen + allow remote control"* dialog →
   pick your **game monitor** (or the **WoW window**) and allow. Keep the screen
   **unlocked** while it runs — GNOME inhibits the portal on the lock screen.
 - After a 10s grace it casts, watches the water, reels a stable bobber, recasts.
-- Press **`q`** in the debug window (or Ctrl-C) to stop.
+- Press **Ctrl-C** to stop (or `q` in the debug window, devcontainer builds only).
 
 CLI flags:
 
 | flag | what it does |
 |---|---|
-| `--debug` | live window with detection boxes drawn |
+| `--debug` | live window with detection boxes drawn (devcontainer builds only — the Flatpak has no GUI backend) |
 | `--grab-frame <PATH>` | save one frame (use it to crop a lure icon) |
 | `--check-lure <PATH>` | score the lure template against a saved frame, offline |
 | `--model <PATH>` | use a different cascade `.xml` |
@@ -197,7 +210,7 @@ Notable tuning knobs:
 
 ## Tests & quality
 
-Run these inside the devcontainer (they need the static OpenCV):
+Run these inside the devcontainer (they need OpenCV and the committed model files):
 
 ```sh
 cargo test                                  # pure state machine + both detector smoke tests

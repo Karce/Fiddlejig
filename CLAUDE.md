@@ -30,38 +30,56 @@ note *why* macro won't do it.
 - Addons live under `addons/<AddonName>/` with `.toc` plus Lua sources.
 - Target API: WoW Classic TBC Anniversary (2.5.x). See `docs/api/`.
 
-## Building native code — build in a container, don't pollute the host
+## Building native code — develop in a container, ship a Flatpak
 
-> **Applies to Fedora-based atomic/immutable desktops** — rpm-ostree / bootc systems like
-> Fedora Silverblue & Kinoite and Universal Blue (Bluefin, Bazzite, Aurora). There it's
-> load-bearing; on any other Linux same build-in-a-container + static-link pattern still
-> good hygiene (clean host, reproducible builds).
+Two separate jobs; don't conflate them.
 
-On atomic/immutable host, root filesystem = image updated as whole, extra
-packages *layered* on top. Layering build/`-devel` packages risky: one dep that
-can't depsolve against base image makes **entire OS update silently roll back**.
-(Concretely, layering `gstreamer1-plugins-base-devel` pulls `mesa-libgbm-devel`, which
-won't resolve against base image's `mesa-libgbm`, so `rpm-ostree`/`ujust update`
-refuse to advance.) So:
+**Developing** native-dependency code happens in the repo-wide
+[devcontainer](https://containers.dev/) (`.devcontainer/`, Debian 13). It carries
+compilers and `-devel` headers so none of that is ever installed on the host. This is
+good hygiene anywhere, and load-bearing on image-based hosts (GNOME OS, Fedora
+Silverblue/Kinoite, Universal Blue) where the root filesystem is an image and there may
+be no package manager at all.
 
-- **Build in container, not host.** When code needs build dependency not
-  already present, install inside a [devcontainer](https://containers.dev/)
-  (compilers, `-devel` headers, …) — never `rpm-ostree install` onto host.
-- **Produce binary that runs on bare host.** Static-link niche dependency (or
-  otherwise avoid at runtime) so artifact needs only base-image libraries; confirm
-  with `ldd` that niche `.so` gone.
-- **Keep host's layered-package set empty** (or minimal) so OS updates keep flowing.
+**Shipping** a desktop tool means a **Flatpak**, not a host binary. Do not try to make
+the devcontainer emit something that runs on the bare host — that path pins the artifact
+to the build image's glibc and it will run nowhere else. glibc has no forward
+compatibility, and full static linking is not available to anything that needs GTK or
+GStreamer (both are dynamic, and GStreamer `dlopen`s its plugins).
 
-Worked example — **Autofisher-3000** (`tools/autofisher-3000`), Rust tool that links
-**OpenCV statically**. The repo-wide devcontainer (`.devcontainer/`) carries the
-toolchain and a pre-built static OpenCV:
+In a Flatpak, native dependencies become **manifest modules** built into `/app`. The
+host stays clean because the app is sandboxed, not because the binary is static.
+
+Worked example — **Autofisher-3000** (`tools/autofisher-3000`), Rust tool needing
+OpenCV, GStreamer and ONNX Runtime.
+
+Develop and test in the devcontainer:
 
 ```sh
 # VS Code: "Reopen in Container" (or: devcontainer up --workspace-folder .)
 cd tools/autofisher-3000
 cargo build --release
 cargo test
-./target/release/autofisher-3000 --debug    # runs on the host (ldd: no libopencv_*.so)
 ```
 
-Reuse this pattern (devcontainer with pre-built static deps) for future native-dep tools.
+Build the shippable artifact on the host — `flatpak-builder` is itself a Flatpak, so
+nothing is installed system-wide:
+
+```sh
+flatpak install -y flathub org.flatpak.Builder
+cd tools/autofisher-3000
+flatpak run org.flatpak.Builder --force-clean --user --install \
+  --install-deps-from=flathub --repo=repo \
+  build packaging/io.github.karce.Autofisher3000.yaml
+```
+
+See `tools/autofisher-3000/packaging/README.md`. Two rules that generalise to future
+native-dep tools:
+
+- **Flatpak builds have no network.** Vendor everything: Rust crates via
+  `flatpak-cargo-generator.py` into `cargo-sources.json` (regenerate whenever
+  `Cargo.lock` moves), and disable any dependency that fetches at configure time
+  (OpenCV's `WITH_IPP`/`WITH_ADE` do).
+- **Prefer portals to permissions.** Autofisher captures and injects input entirely
+  through XDG portals, which every sandbox may use for free, so its `finish-args` are
+  near-empty — no display socket, no PipeWire socket, no network.

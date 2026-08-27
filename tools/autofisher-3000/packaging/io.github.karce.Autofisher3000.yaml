@@ -1,0 +1,169 @@
+# Autofisher-3000 Flatpak.
+#
+# Build on the host (nothing gets installed system-wide):
+#   flatpak install -y flathub org.flatpak.Builder
+#   cd tools/autofisher-3000
+#   flatpak run org.flatpak.Builder --force-clean --user --install \
+#     --install-deps-from=flathub --repo=repo \
+#     build packaging/io.github.karce.Autofisher3000.yaml
+#
+# Regenerate cargo-sources.json whenever Cargo.lock moves — see packaging/README.md.
+app-id: io.github.karce.Autofisher3000
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  # opencv-rs runs a libclang-based binding generator at build time, and the base
+  # SDK ships no clang (verified: `clang: command not found` in org.freedesktop.Sdk//25.08).
+  - org.freedesktop.Sdk.Extension.llvm20
+command: autofisher-3000
+
+finish-args:
+  # Where ort dlopens ONNX Runtime from. Not a permission — just an env var.
+  - --env=ORT_DYLIB_PATH=/app/lib/libonnxruntime.so
+  # The only disk access the app performs: `--grab-frame` writes a PNG and
+  # `--check-lure` reads one back. Everything else goes to stderr.
+  - --filesystem=xdg-pictures:create
+  #
+  # Deliberately absent — do not add without a reason:
+  #   --socket=session-bus / --talk-name=org.freedesktop.portal.*
+  #       Every sandbox reaches org.freedesktop.portal.* through the always-present
+  #       filtered bus proxy. ScreenCast and RemoteDesktop cost zero permissions.
+  #   --filesystem=xdg-run/pipewire-0
+  #       The app never opens the PipeWire socket. portal.rs calls
+  #       open_pipe_wire_remote() and passes the resulting fd to `pipewiresrc fd=`.
+  #   --socket=wayland / --socket=fallback-x11 / --share=ipc
+  #       OpenCV is built without a GUI backend, so there is no window to map.
+  #       Input goes through the RemoteDesktop portal, not a display connection.
+  #   --share=network
+  #       Never used. ort's downloader is compiled out by the ort-dylib feature.
+
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+  - /share/opencv4
+  - '*.a'
+  - '*.la'
+
+modules:
+  # 1. Prebuilt shared library, just unpacked. No deps, so it fails fastest if
+  #    the URL ever rots.
+  - name: onnxruntime
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 lib/libonnxruntime.so.1.24.2 /app/lib/libonnxruntime.so.1.24.2
+      - ln -srf /app/lib/libonnxruntime.so.1.24.2 /app/lib/libonnxruntime.so.1
+      - ln -srf /app/lib/libonnxruntime.so.1 /app/lib/libonnxruntime.so
+    sources:
+      - type: archive
+        url: https://github.com/microsoft/onnxruntime/releases/download/v1.24.2/onnxruntime-linux-x64-1.24.2.tgz
+        sha256: 43725474ba5663642e17684717946693850e2005efbd724ac72da278fead25e6
+        strip-components: 1
+
+  # 2. Must precede the app module: opencv-rs probes /app/lib/pkgconfig/opencv4.pc.
+  - name: opencv
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX=/app
+      - -DCMAKE_INSTALL_LIBDIR=lib
+      - -DBUILD_SHARED_LIBS=ON
+      - -DOPENCV_GENERATE_PKGCONFIG=ON
+      # The modules the app touches, plus highgui (an unconditional cargo feature).
+      # calib3d/features2d/flann come along as objdetect's dependencies.
+      - -DBUILD_LIST=core,imgproc,imgcodecs,videoio,objdetect,highgui
+      # Load-bearing: capture.rs opens a GStreamer pipeline string through
+      # VideoCapture(CAP_GSTREAMER). Without this, capture silently has no backend.
+      - -DWITH_GSTREAMER=ON
+      # Compile backends in rather than shipping loadable plugins — one less
+      # runtime search path to get wrong under /app.
+      - -DVIDEOIO_ENABLE_PLUGINS=OFF
+      - -DHIGHGUI_ENABLE_PLUGINS=OFF
+      # No GUI backend: no --debug window in the sandbox, and no GTK3 dependency.
+      - -DWITH_GTK=OFF
+      - -DWITH_QT=OFF
+      # IPP (ippicv) and ADE *download at configure time*. flatpak-builder runs
+      # modules with no network, so leaving these on is a hard build failure.
+      - -DWITH_IPP=OFF
+      - -DBUILD_IPP_IW=OFF
+      - -DWITH_ITT=OFF
+      - -DWITH_ADE=OFF
+      - -DWITH_PROTOBUF=OFF
+      - -DBUILD_PROTOBUF=OFF
+      # Unused capture/codec backends.
+      - -DWITH_FFMPEG=OFF
+      - -DWITH_V4L=OFF
+      - -DWITH_1394=OFF
+      - -DWITH_OBSENSOR=OFF
+      - -DWITH_OPENCL=OFF
+      - -DWITH_CUDA=OFF
+      - -DWITH_EIGEN=OFF
+      - -DWITH_TBB=OFF
+      - -DWITH_OPENMP=OFF
+      - -DWITH_QUIRC=OFF
+      # imgcodecs: PNG (lure templates, --grab-frame) and JPEG only, taken from
+      # the runtime rather than OpenCV's bundled copies.
+      - -DBUILD_ZLIB=OFF
+      - -DBUILD_PNG=OFF
+      - -DBUILD_JPEG=OFF
+      - -DWITH_PNG=ON
+      - -DWITH_JPEG=ON
+      - -DWITH_TIFF=OFF
+      - -DWITH_WEBP=OFF
+      - -DWITH_OPENJPEG=OFF
+      - -DWITH_JASPER=OFF
+      - -DWITH_OPENEXR=OFF
+      - -DBUILD_opencv_apps=OFF
+      - -DBUILD_TESTS=OFF
+      - -DBUILD_PERF_TESTS=OFF
+      - -DBUILD_EXAMPLES=OFF
+      - -DBUILD_DOCS=OFF
+      - -DBUILD_JAVA=OFF
+      - -DBUILD_opencv_python2=OFF
+      - -DBUILD_opencv_python3=OFF
+      - -DOPENCV_SKIP_PYTHON_LOADER=ON
+      - -DOPENCV_ENABLE_NONFREE=OFF
+      - -DOPENCV_GENERATE_SETUPVARS=OFF
+      - -DENABLE_PRECOMPILED_HEADERS=OFF
+    sources:
+      - type: archive
+        url: https://github.com/opencv/opencv/archive/refs/tags/4.13.0.tar.gz
+        sha256: 1d40ca017ea51c533cf9fd5cbde5b5fe7ae248291ddf2af99d4c17cf8e13017d
+
+  # 3. The module name must stay `autofisher-3000`: CARGO_HOME below hardcodes
+  #    /run/build/<module-name>/cargo, which is where cargo-sources.json lands.
+  - name: autofisher-3000
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/llvm20/bin
+      prepend-ld-library-path: /usr/lib/sdk/llvm20/lib
+      env:
+        CARGO_HOME: /run/build/autofisher-3000/cargo
+        CARGO_NET_OFFLINE: 'true'
+        LIBCLANG_PATH: /usr/lib/sdk/llvm20/lib
+    build-commands:
+      # -p is required: --features is rejected at a virtual-workspace root.
+      # ort-dylib replaces ort-download, so ort-sys never tries to fetch anything.
+      - cargo --offline build --release --locked -p autofisher-3000
+        --no-default-features --features ort-dylib
+      - install -Dm755 target/release/autofisher-3000 /app/bin/autofisher-3000
+      # Only the three assets Config::default() actually references at runtime.
+      - install -Dm644 bot/models/bobber.onnx -t /app/share/autofisher-3000/models
+      - install -Dm644 bot/models/bobber_z4_10v3.xml -t /app/share/autofisher-3000/models
+      - install -Dm644 bot/icons/lure_2560x1440.png -t /app/share/autofisher-3000/icons
+      - install -Dm644 packaging/io.github.karce.Autofisher3000.desktop -t /app/share/applications
+      - install -Dm644 packaging/io.github.karce.Autofisher3000.metainfo.xml -t /app/share/metainfo
+    sources:
+      - type: dir
+        path: ..
+        skip:
+          - target
+          - training
+          - .venv
+          - packaging/.flatpak-builder
+          - packaging/build
+          - packaging/repo
+      - cargo-sources.json
