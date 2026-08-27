@@ -30,8 +30,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # uid 1000 matches the host user, so bind-mounted files keep their ownership
 # (devcontainer.json pins updateRemoteUserUID=false). fish is the login shell.
+#
+# /home/vscode/.claude must exist with the right owner in the image: the named
+# volume mounted there (see "mounts" in devcontainer.json) inherits the image
+# directory's ownership when first created, and would otherwise come up
+# root-owned and unwritable.
 RUN useradd -m -u 1000 -s /usr/bin/fish vscode \
     && echo "vscode ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/vscode \
-    && chmod 0440 /etc/sudoers.d/vscode
+    && chmod 0440 /etc/sudoers.d/vscode \
+    && install -d -o vscode -g vscode /home/vscode/.claude
 
 USER vscode

@@ -8,6 +8,12 @@
   },
   "updateRemoteUserUID": false,
   "remoteUser": "vscode",
+  // Claude Code keeps its state (sessions, transcripts, plans, credentials) in
+  // ~/.claude. Without this the container filesystem takes it all on every
+  // rebuild. A named volume keeps it per-developer and out of the repo.
+  "mounts": [
+    "source=fiddlejig-claude-state,target=/home/vscode/.claude,type=volume"
+  ],
   "postCreateCommand": "bash scripts/setup-luals.sh",
   "customizations": {
     "vscode": {
