@@ -22,6 +22,22 @@ local DELTA_LOVES, DELTA_LIKES, DELTA_EATS = 10, 20, 30
 -- you're losing the damage/loyalty bonus). Set to 2 to only nag when unhappy.
 local REMINDER_BELOW = 3
 
+-- GetPetHappiness / GetPetFoodTypes: globals on Classic, C_PetInfo on Forever.
+local GetPetHappiness = _G.GetPetHappiness
+	or (C_PetInfo and C_PetInfo.GetPetHappiness)
+	or function() return 1 end
+-- C_PetInfo.GetPetFoodTypes returns one table of diet strings, not a vararg.
+local GetPetFoodTypes = _G.GetPetFoodTypes
+	or (C_PetInfo and C_PetInfo.GetPetFoodTypes and function()
+		local diets = C_PetInfo.GetPetFoodTypes()
+		if type(diets) == "table" then return unpack(diets) end
+		return diets
+	end)
+	or function() return "Meat", "Fish", "Bread", "Cheese", "Fruit", "Fungus" end
+
+-- GetItemInfo: global on Classic, C_Item.GetItemInfo on Forever (same multi-return).
+local GetItemInfo = _G.GetItemInfo or (C_Item and C_Item.GetItemInfo)
+
 -- Container API: globals on 2.5.x, C_Container on newer clients. Support both.
 local C = _G.C_Container
 local function NumSlots(bag)
@@ -50,6 +66,10 @@ end
 -- localized spell name is enough — no need to gate on IsSpellKnown (which has been
 -- unreliable for some Classic spells).
 local function FeedPetSpellName()
+	if C_Spell and C_Spell.GetSpellInfo then
+		local info = C_Spell.GetSpellInfo(FEED_PET_SPELL_ID)
+		return info and info.name
+	end
 	return (GetSpellInfo(FEED_PET_SPELL_ID))
 end
 
@@ -127,10 +147,18 @@ end
 -- 10th return of UnitBuff on 2.5.x.
 local function PetIsEating()
 	if not UnitExists("pet") then return false end
-	for i = 1, 40 do
-		local name, _, _, _, _, _, _, _, _, spellId = UnitBuff("pet", i)
-		if not name then break end
-		if spellId == FEED_BUFF_SPELL_ID then return true end
+	if C_UnitAuras and C_UnitAuras.GetBuffDataByIndex then
+		for i = 1, 40 do
+			local aura = C_UnitAuras.GetBuffDataByIndex("pet", i)
+			if not aura then break end
+			if aura.spellId == FEED_BUFF_SPELL_ID then return true end
+		end
+	else
+		for i = 1, 40 do
+			local name, _, _, _, _, _, _, _, _, spellId = UnitBuff("pet", i)
+			if not name then break end
+			if spellId == FEED_BUFF_SPELL_ID then return true end
+		end
 	end
 	return false
 end
@@ -154,10 +182,14 @@ local function Rearm()
 	ApplyFood(best)
 end
 
-local function CurrentFoodLink()
-	if not currentFood then return nil end
+local function FoodLink(food)
+	if not food then return nil end
 	local getLink = (C and C.GetContainerItemLink) or GetContainerItemLink
-	return getLink(currentFood.bag, currentFood.slot)
+	return getLink(food.bag, food.slot)
+end
+
+local function CurrentFoodLink()
+	return FoodLink(currentFood)
 end
 
 local function CheckHappiness()
@@ -188,7 +220,7 @@ local function OnEvent(_, event, arg1)
 	elseif event == "PLAYER_REGEN_ENABLED" then
 		if rearmQueued then Rearm() end
 		CheckHappiness()
-	elseif event == "UNIT_HAPPINESS" then
+	elseif event == "UNIT_HAPPINESS" or event == "UNIT_POWER_FREQUENT" then
 		Rearm() -- happiness changed: (dis)arm per the not-already-Happy gate
 		CheckHappiness()
 	elseif event == "UNIT_AURA" then
@@ -266,8 +298,13 @@ local function SlashHandler(msg)
 			Print("No pet out — summon or revive your pet first.")
 			return
 		end
-		local link = CurrentFoodLink()
-		Print("best food: " .. (link or "none found") ..
+		local link = FoodLink(FindBestFood())
+		local state
+		if currentFood then state = "armed"
+		elseif PetIsEating() then state = "not armed: pet is eating"
+		elseif (GetPetHappiness() or 0) >= 3 then state = "not armed: pet is Happy"
+		else state = "not armed" end
+		Print("best food: " .. (link or "none found") .. "  |  " .. state ..
 			"  |  reminder: " .. (JojaAutoPetterDB.reminder and "on" or "off"))
 		Print("Feed with your bound key, /joja feed, or a /click JojaAutoPetterButton macro. /joja debug to diagnose.")
 	end
@@ -288,7 +325,11 @@ driver:RegisterEvent("ADDON_LOADED")
 driver:RegisterEvent("PLAYER_LOGIN")
 driver:RegisterEvent("PLAYER_ENTERING_WORLD")
 driver:RegisterEvent("BAG_UPDATE_DELAYED")
-driver:RegisterEvent("UNIT_HAPPINESS")
+if C_PetInfo then
+	driver:RegisterUnitEvent("UNIT_POWER_FREQUENT", "pet")
+else
+	driver:RegisterEvent("UNIT_HAPPINESS")
+end
 driver:RegisterEvent("PLAYER_REGEN_ENABLED")
 driver:RegisterUnitEvent("UNIT_PET", "player")
 driver:RegisterUnitEvent("UNIT_AURA", "pet") -- catch Feed Pet Effect applying/fading

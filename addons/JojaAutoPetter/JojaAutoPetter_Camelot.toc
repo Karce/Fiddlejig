@@ -1,0 +1,12 @@
+# Forever (Classic+) flavor — the 1.60 client prefers <Addon>_Camelot.toc.
+# Same sources; API compatibility TBD (Forever uses retail-based C_* namespaces).
+## Interface: 16001
+## Title: Joja Mart's Auto-Petter
+## Notes: Auto-picks the best food for your pet's diet and feeds it with one key — a Stardew Valley Auto-Petter homage.
+## Author: Karce
+## SavedVariables: JojaAutoPetterDB
+## X-Category: Hunter
+## IconTexture: Interface\AddOns\JojaAutoPetter\Icon.tga
+
+Foods.lua
+Core.lua
